@@ -121,7 +121,6 @@ def set_solution(model, conic_graph, yv, zv, ye, ze, tol, callback=None):
             callback.upper_bounds])
 
     # Set vertex variable values.
-    print('status', model.status)
     for vertex, y, z in zip(conic_graph.vertices, yv_value, zv):
         if model.status in [2, 12, 13]: # Optimal, numeric error, suboptimal.
             vertex.binary_variable.value = y

@@ -90,14 +90,11 @@ if plot_bounds:
     params = {"OutputFlag": 1, "QCPDual": 1}
     plot_bounds = True
     facility_location(graph, gurobi_parameters=params, save_bounds=plot_bounds)
+    plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
 else:
     graph.solve_facility_location(verbose=True, solver="GUROBI")
 print('Problem status:', graph.status)
 print('Optimal value:', graph.value)
-
-# Plot upper and lower bounds from gurobi.
-if plot_bounds:
-    plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
 
 # Plot solution.
 plt.figure()

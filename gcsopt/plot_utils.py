@@ -41,7 +41,7 @@ def plot_2d_edge(edge, endpoints=None, directed=True, **kwargs):
         if variables[0].size != 2:
             raise ValueError("Can only plot 2D sets.")
     if directed:
-        arrowstyle = "->, head_width=3, head_length=8"
+        arrowstyle = "->, head_width=2, head_length=5"
     else:
         arrowstyle = "-"
     options = dict(zorder=2, arrowstyle=arrowstyle)

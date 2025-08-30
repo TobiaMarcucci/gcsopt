@@ -1,33 +1,3 @@
-# GCSOPT
-
-Python library to solve optimization problems in Graphs of Convex Sets (GCS).
-For a detailed description of the algorithms implemented implemented in this library see the PhD thesis [Graphs of Convex Sets with Applications to Optimal Control and Motion Planning](https://dspace.mit.edu/handle/1721.1/156598?show=full).
-(Please note that the library recently changed name, and in the thesis it is called `gcspy`.)
-
-## Main features
-
-- Uses the syntax of [CVXPY](https://www.cvxpy.org) for describing convex sets and convex functions.
-- Provides a simple interface for assembling your graphs.
-- Interface with state-of-the-art solvers via [CVXPY](https://www.cvxpy.org/).
-
-## Installation
-
-You can install the latest release from [PyPI](https://pypi.org/project/gcsopt/):
-```bash
-pip install gcsopt
-```
-
-To install from source:
-```bash
-git clone https://github.com/TobiaMarcucci/gcsopt.git
-cd gcsopt
-pip install .
-```
-
-
-## Example
-Here is a minimal example of how to use gcsopt for solving a shortest-path problem in GCS:
-```python
 import cvxpy as cp
 from gcsopt import GraphOfConvexSets
 
@@ -79,25 +49,3 @@ plt.figure() # Initializes empty figure.
 G.plot_2d() # Plot graph of convex sets.
 G.plot_2d_solution() # Plot optimal subgraph.
 plt.show() # Show figure.
-```
-
-The otput of this script is:
-```bash
-Problem status: optimal
-Optimal value: 2.4561622509772887
-Variable (0, 0) optimal value: [0.28768714 0.08506533]
-Variable (0, 1) optimal value: None
-Variable (0, 2) optimal value: None
-Variable (1, 0) optimal value: [0.82565028 0.24413557]
-Variable (1, 1) optimal value: [1.21213203 0.78786797]
-Variable (1, 2) optimal value: None
-Variable (2, 0) optimal value: None
-Variable (2, 1) optimal value: [1.75586443 1.17434971]
-Variable (2, 2) optimal value: [1.91493467 1.71231286]
-```
-
-## License
-This project is licensed under the MIT License.
-
-## Author
-Developed and maintained by Tobia Marcucci.
