@@ -38,7 +38,7 @@ G.solve_shortest_path(s, t) # Populates graph with result of optimization proble
 
 # Print solution statistics.
 print("Problem status:", G.status)
-print("Optimal value:", G.value)
+print("Problem optimal value:", G.value)
 for v in G.vertices:
     x = v.variables[0]
     print(f"Variable {v.name} optimal value:", x.value)
