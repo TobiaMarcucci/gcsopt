@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from gcsopt import GraphOfConvexSets
 
-# all the rooms in the floor plant
-# each room is described by a triplet (index, lower corner, upper corner)
+# All rooms in the layer plant. Each room is described by a triplet with room
+# index, lower corner, and upper corner.
 rooms = [
     (0, [0, 5], [2, 8]), 
     (1, [0, 3], [4, 5]),
@@ -28,9 +28,8 @@ rooms = [
     (19, [14, 2], [16, 7]),
 ]
 
-# all the doors in the floor plant
-# each door is described by
-# (first room index, second room index, door lower corner, door upper corner)
+# All doors in the layer plant. Each door is described by first room index,
+# second room index, door lower corner, and door upper corner.
 doors = [
     (0, 3, [2, 7], [2, 8]),
     (1, 2, [1, 3], [2, 3]),
@@ -56,11 +55,11 @@ doors = [
     (14, 19, [14, 6], [14, 7]),
 ]
 
-# rooms that must be visited by the minimum-length trajectory
+# Rooms that must be visited by the trajectory.
 visit_rooms = [0, 2, 7, 10, 13, 15, 18]
 
-# helper class that allows to construct a floor
-class Floor(GraphOfConvexSets):
+# Helper class that allows us to construct one layer of the graph.
+class Layer(GraphOfConvexSets):
 
     def __init__(self, rooms, doors, name):
         super().__init__()
@@ -94,68 +93,70 @@ class Floor(GraphOfConvexSets):
         e1 = self.add_one_way_door(n, m, l, u)
         e2 = self.add_one_way_door(m, n, l, u)
         return e1, e2
-
-# initialize empty graph
-graph = GraphOfConvexSets()
-
-# adds one copy of the floor plant for each room that we must visit
-num_floors = len(visit_rooms)
-for floor in range(num_floors):
-    graph.add_disjoint_subgraph(Floor(rooms, doors, floor))
-
-# connects copies of the floors on a given room
-def connect_floors(floor1, floor2, room):
-    tail = graph.get_vertex(f"{floor1}_{room}")
-    head = graph.get_vertex(f"{floor2}_{room}")
+    
+# Helper function that connects layers at given room.
+def connect_layers(layer1, layer2, room):
+    tail = graph.get_vertex(f"{layer1}_{room}")
+    head = graph.get_vertex(f"{layer2}_{room}")
     edge = graph.add_edge(tail, head)
     edge.add_constraint(tail.variables[1] == head.variables[0])
 
-# connect top floor to ground floor at first visit room
+# Helper function that returns the edge binary variable that connects two layers
+# through a given room.
+def get_binary_variable(layer1, layer2, room):
+    tail_name = f"{layer1}_{room}"
+    head_name = f"{layer2}_{room}"
+    edge = graph.get_edge(tail_name, head_name)
+    return ye[graph.edge_index(edge)]
+
+# Initialize empty graph.
+graph = GraphOfConvexSets()
+
+# Add one layer for each room that we must visit.
+num_layers = len(visit_rooms)
+for i in range(num_layers):
+    layer = Layer(rooms, doors, i)
+    graph.add_disjoint_subgraph(layer)
+
+# Connect top layer to bottom layer in correspondence of first room.
 first_room = visit_rooms[0]
-first_floor = 0
-last_floor = num_floors - 1
-connect_floors(last_floor, first_floor, first_room)
+first_layer = 0
+last_layer = num_layers - 1
+connect_layers(last_layer, first_layer, first_room)
 
-# connect each floor to the floor above at the visit room
-for floor in range(last_floor):
+# Connect each layer to the next at visit room.
+for layer in range(last_layer):
     for room in visit_rooms[1:]:
-        connect_floors(floor, floor + 1, room)
+        connect_layers(layer, layer + 1, room)
 
-# retrieve binary variables
+# Initialize constraints of the integer linear program.
 yv = graph.vertex_binaries()
 ye = graph.edge_binaries()
-
-# constraints of the integer programming formulation
 ilp_constraints = []
+
+# Relate edge and vertex binaries.
 for i, vertex in enumerate(graph.vertices):
     inc_edges = graph.incoming_edge_indices(vertex)
     out_edges = graph.outgoing_edge_indices(vertex)
     ilp_constraints.append(yv[i] == sum(ye[inc_edges]))
     ilp_constraints.append(yv[i] == sum(ye[out_edges]))
-    
-# returns the edge binary variable that connects two floors through a given room
-def get_binary_variable(floor1, floor2, room):
-    tail_name = f"{floor1}_{room}"
-    head_name = f"{floor2}_{room}"
-    edge = graph.get_edge(tail_name, head_name)
-    return ye[graph.edge_index(edge)]
 
-# add constraints that force the trajectory to move between floors
-ilp_constraints.append(get_binary_variable(last_floor, first_floor, first_room) == 1)
+# Force the trajectory to move between layers.
+ilp_constraints.append(get_binary_variable(last_layer, first_layer, first_room) == 1)
 for room in visit_rooms[1:]:
-    flow = sum(get_binary_variable(floor, floor + 1, room) for floor in range(last_floor))
+    flow = sum(get_binary_variable(layer, layer + 1, room) for layer in range(last_layer))
     ilp_constraints.append(flow == 1)
 
-# solve problem (this will take a very long time)
-graph.solve_from_ilp(ilp_constraints)
+# Solve problem.
+graph.solve_from_ilp(ilp_constraints, verbose=True, solver="GUROBI")
 print('Problem status:', graph.status)
 print('Optimal value:', graph.value)
 
-# plot solution
-plt.figure()
-plt.axis("equal")
+# Plot solution.
+plt.figure(figsize=(6, 3.75))
+plt.axis("off")
 
-# helper function that plots one room
+# Helper function that plots one room.
 def plot_room(n, l, u):
     l = np.array(l)
     u = np.array(u)
@@ -164,22 +165,23 @@ def plot_room(n, l, u):
     rect = patches.Rectangle(l, *d, fc=fc, ec="k")
     plt.gca().add_patch(rect)
         
-# helper function that plots one door
+# Helper function that plots one door.
 def plot_door(l, u):
     endpoints =  np.array([l, u]).T
     plt.plot(*endpoints, color="mintcream", solid_capstyle="butt")
     plt.plot(*endpoints, color="grey", linestyle=":")
         
-# plot all rooms and doors
+# Plot all rooms and doors.
 for room in rooms:
     plot_room(*room)
 for door in doors:
     plot_door(door[2], door[3])
 
-# plot optimal trajectory
+# Plot optimal trajectory.
 for vertex in graph.vertices:
     if np.isclose(vertex.binary_variable.value, 1):
         x1, x2 = vertex.variables
         values = np.array([x1.value, x2.value]).T
         plt.plot(*values, c="b", linestyle="--")
+plt.savefig("inspection.pdf", bbox_inches="tight")
 plt.show()
