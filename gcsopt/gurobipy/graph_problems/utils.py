@@ -183,28 +183,14 @@ class SubtourEliminationCallback(BaseCallback):
         if where == GRB.Callback.MIPSOL:
             ye = model.cbGetSolution(self.ye)
             edges = [self.conic_graph.edges[k] for k, y in enumerate(ye) if y > 0.5]
-            tour = self.shortest_subtour(edges)
-            if tour and len(tour) < self.conic_graph.num_vertices():
-                self.cut(model, tour)
-
-    def cut(self, model, tour):
-        ind = self.conic_graph.induced_edge_indices(tour)
-        model.cbLazy(sum(self.ye[ind]) <= len(tour) - 1)
-
-    def shortest_subtour(self, edges):
-        if self.conic_graph.directed:
-            G = nx.DiGraph()
-        else:
-            G = nx.Graph()
-        G.add_edges_from([(e.tail, e.head) for e in edges])
-        if self.conic_graph.directed:
-            tours = list(nx.simple_cycles(G))
-            tours.sort(key=len)
-        else:
-            tours = list(nx.simple_cycles(G, nx.girth(G)))
-        if tours:
-            return tours[0]
-        
+            G = nx.DiGraph() if self.conic_graph.directed else nx.Graph()
+            G.add_edges_from([(e.tail, e.head) for e in edges])
+            length_bound = None if self.conic_graph.directed else nx.girth(G)
+            tours = nx.simple_cycles(G, length_bound)
+            tour = min(tours, key=len, default=None)
+            if tour is not None and len(tour) < self.conic_graph.num_vertices():
+                ind = self.conic_graph.induced_edge_indices(tour)
+                model.cbLazy(sum(self.ye[ind]) <= len(tour) - 1)
 
     # def shortest_subtour(self, edges):
     #     """
@@ -241,31 +227,52 @@ class SubtourEliminationCallback(BaseCallback):
 
 class CutsetCallback(BaseCallback):
 
+    def __init__(self, conic_graph, ye, save_bounds=False):
+        if not conic_graph.directed:
+            raise ValueError("Graph must be directed for cutset callback.")
+        super().__init__(conic_graph, ye, save_bounds)
+
     def __call__(self, model, where):
+        """
+        Note that a cyle cannot contain the root here, since the root has zero
+        incoming edges. Also, we could use the connected components instead, but
+        the cycles seem to be more effective.
+        """
         super().__call__(model, where)
         if where == GRB.Callback.MIPSOL:
             ye = model.cbGetSolution(self.ye)
             edges = [self.conic_graph.edges[k] for k, y in enumerate(ye) if y > 0.5]
-            tours = self.shortest_subtours(edges)
-            for tour in tours:
-                if len(tour) < self.conic_graph.num_vertices():
-                    self.cut(model, tour)
-
-    def cut(self, model, tour):
-        inc = self.conic_graph.incoming_edge_indices(tour)
-        model.cbLazy(sum(self.ye[inc]) >= 1)
-
-    def shortest_subtours(self, edges):
-        if self.conic_graph.directed:
             G = nx.DiGraph()
-        else:
-            G = nx.Graph()
-        G.add_edges_from([(e.tail, e.head) for e in edges])
-        if self.conic_graph.directed:
-            tours = list(nx.simple_cycles(G))
-            tours.sort(key=len)
-            girth = min([len(t) for t in tours], default=0)
-            tours = [t for t in tours if len(t) == girth]
-        else:
-            tours = list(nx.simple_cycles(G, nx.girth(G)))
-        return tours
+            G.add_edges_from([(e.tail, e.head) for e in edges])
+            cycles = list(nx.simple_cycles(G))
+            min_length = min((len(cycle) for cycle in cycles), default=np.inf)
+            for cycle in cycles:
+                if len(cycle) == min_length:
+                    cut = self.conic_graph.incoming_edge_indices(cycle)
+                    model.cbLazy(sum(self.ye[cut]) >= 1)
+
+# class CutsetCallback(BaseCallback):
+
+#     def __init__(self, conic_graph, ye, root, save_bounds=False):
+#         if not conic_graph.directed:
+#             raise ValueError("Graph must be directed for cutset callback.")
+#         super().__init__(conic_graph, ye, save_bounds)
+#         self.root = root
+
+#     def __call__(self, model, where):
+#         super().__call__(model, where)
+#         if where == GRB.Callback.MIPSOL:
+#             ye = model.cbGetSolution(self.ye)
+#             edges = [self.conic_graph.edges[k] for k, y in enumerate(ye) if y > 0.5]
+#             cut = self.get_cut(edges)
+#             if cut:
+#                 model.cbLazy(sum(self.ye[cut]) >= 1)
+
+#     def get_cut(self, edges):
+#         G = nx.DiGraph()
+#         G.add_edges_from([(e.tail, e.head) for e in edges])
+#         if not G.has_node(self.root):
+#             return self.conic_graph.outgoing_edge_indices(self.root)
+#         reachable = nx.descendants(G, self.root) | {self.root}
+#         unreachable = set(self.conic_graph.vertices) - reachable
+#         return self.conic_graph.incoming_edge_indices(unreachable)
