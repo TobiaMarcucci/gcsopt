@@ -172,7 +172,7 @@ class ConvexProgram:
             used_ids += [v.id for v in self.cost.variables()]
         for v in self.variables:
             if not v.id in used_ids:
-                self.add_cost(0 * v.flatten()[0])
+                self.add_cost(0 * v.flatten(order="F")[0])
 
     def to_conic(self):
         """
