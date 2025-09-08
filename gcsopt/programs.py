@@ -16,7 +16,7 @@ class ConicProgram:
 
         # Variables and data from the convex program.
         self.id_to_range = id_to_range
-        self.x = cp.Variable(size)
+        self.x = cp.Variable(size) if size > 0 else None
         self.binary_variable = cp.Variable() if binary_variable is None else binary_variable
 
     def add_cost(self, ci, di):
@@ -48,10 +48,15 @@ class ConicProgram:
         self.K.extend(K)
 
     def cost_homogenization(self, x, y):
-        return self.c @ x + self.d * y
+        value = self.d * y
+        if self.size > 0:
+            value += self.c @ x
+        return value
 
     def constraint_homogenization(self, x, y):
         constraints = []
+        if self.size == 0 or self.A.shape[0] == 0: # Unconstrained problem.
+            return constraints
         z = self.A @ x + self.b * y
         start = 0
         for cone_type, cone_size in self.K:

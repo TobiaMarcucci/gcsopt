@@ -387,6 +387,15 @@ class TestConvexProgram(unittest.TestCase):
         self.assertAlmostEqual(convex_value, 1.55, places=4)
         self.assertAlmostEqual(conic_value, 1.55, places=4)
 
+        # Program with constant cost and no constraints.
+        convex_prog = ConvexProgram()
+        convex_prog.add_cost(1.55)
+        conic_prog = convex_prog.to_conic()
+        convex_value = convex_prog.solve()
+        conic_value = conic_prog.solve()
+        self.assertAlmostEqual(convex_value, 1.55, places=4)
+        self.assertAlmostEqual(conic_value, 1.55, places=4)
+
         # Program with free variable.
         prog = ConvexProgram()
         x = prog.add_variable(4, nonneg=True)
