@@ -167,6 +167,15 @@ class TestConicProgram(unittest.TestCase):
         self.assertAlmostEqual(cost, 4, places=4)
         np.testing.assert_array_almost_equal(self.sdp.x.value, [np.sqrt(2), 1, 1], decimal=4)
 
+        # Program with no variables.
+        prog = ConicProgram(0)
+        prog.add_cost(np.zeros(0), 1.33)
+        cost = prog.solve()
+        self.assertAlmostEqual(cost, 1.33, places=4)
+        self.assertIsNone(prog.x.value)
+        self.assertEqual(prog.x.size, 0)
+        self.assertEqual(prog.x.shape, (0,))
+
 class TestConvexProgram(unittest.TestCase):
 
     def setUp(self):
@@ -387,7 +396,7 @@ class TestConvexProgram(unittest.TestCase):
         self.assertAlmostEqual(convex_value, 1.55, places=4)
         self.assertAlmostEqual(conic_value, 1.55, places=4)
 
-        # Program with constant cost and no constraints.
+        # Program with constant cost and no variables.
         convex_prog = ConvexProgram()
         convex_prog.add_cost(1.55)
         conic_prog = convex_prog.to_conic()

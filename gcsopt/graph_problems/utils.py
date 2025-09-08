@@ -1,6 +1,7 @@
 import cvxpy as cp
 import numpy as np
 from itertools import combinations
+from gcsopt.safe_variable import safe_variable
 
 def define_variables(conic_graph, binary):
 
@@ -8,14 +9,11 @@ def define_variables(conic_graph, binary):
     yv = cp.Variable(conic_graph.num_vertices(), boolean=binary)
     ye = cp.Variable(conic_graph.num_edges(), boolean=binary)
     
-    # Function that allows adding variables of zero size.
-    add_var = lambda size: cp.Variable(size) if size > 0 else np.array([])
-
     # Auxiliary continuous varibales.
-    zv = np.array([add_var(vertex.size) for vertex in conic_graph.vertices])
-    ze = np.array([add_var(edge.slack_size) for edge in conic_graph.edges])
-    ze_tail = np.array([add_var(edge.tail.size) for edge in conic_graph.edges])
-    ze_head = np.array([add_var(edge.head.size) for edge in conic_graph.edges])
+    zv = np.array([safe_variable(vertex.size) for vertex in conic_graph.vertices])
+    ze = np.array([safe_variable(edge.slack_size) for edge in conic_graph.edges])
+    ze_tail = np.array([safe_variable(edge.tail.size) for edge in conic_graph.edges])
+    ze_head = np.array([safe_variable(edge.head.size) for edge in conic_graph.edges])
 
     return yv, zv, ye, ze, ze_tail, ze_head
 

@@ -1,6 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from numbers import Number
+from gcsopt.safe_variable import safe_variable
 
 class ConicProgram:
 
@@ -15,8 +16,8 @@ class ConicProgram:
         self.K = []
 
         # Variables and data from the convex program.
-        self.id_to_range = id_to_range
-        self.x = cp.Variable(size) if size > 0 else None
+        self.id_to_range = id_to_range if id_to_range is not None else dict()
+        self.x = safe_variable(size)
         self.binary_variable = cp.Variable() if binary_variable is None else binary_variable
 
     def add_cost(self, ci, di):
