@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 from gcsopt.programs import ConvexProgram
-from gcsopt.graph_problems.utils import define_variables, set_solution
+from gcsopt.graph_problems.utils import define_variables, enforce_edge_programs, set_solution
 
 def from_ilp(conic_graph, ilp_constraints, binary, tol, **kwargs):
 
@@ -25,21 +25,17 @@ def from_ilp(conic_graph, ilp_constraints, binary, tol, **kwargs):
     # Variables of MICP. Note that xv and xe can always be omitted.
     yv, zv, ye, ze, ze_tail, ze_head = define_variables(conic_graph, binary)
 
+    # Enforce edge costs and constraints.
+    cost, constraints = enforce_edge_programs(conic_graph, ye, ze, ze_tail, ze_head)
+
     # Vertex costs and constraints.
-    cost = 0
-    constraints = [yv <= 1]
+    constraints.append(yv <= 1)
     for i, vertex in enumerate(conic_graph.vertices):
         cost += vertex.cost_homogenization(zv[i], yv[i])
 
-    # Edge costs and constraints.
+    # Enforce constraints implied by subgraph constraint yv >= ye. Letting the
+    # user decide when to enforce these constraints would be error prone.
     for k, edge in enumerate(conic_graph.edges):
-        cost += edge.cost_homogenization(ze_tail[k], ze_head[k], ze[k], ye[k])
-        constraints += edge.constraint_homogenization(ze_tail[k], ze_head[k], ze[k], ye[k])
-
-        # Enforce constraint implied by the subgraph polytope: 0 <= ye <= yv.
-        # Letting the user decide when to enforce these is error prone.
-        constraints += edge.tail.constraint_homogenization(ze_tail[k], ye[k])
-        constraints += edge.head.constraint_homogenization(ze_head[k], ye[k])
         i = conic_graph.vertex_index(edge.tail)
         j = conic_graph.vertex_index(edge.head)
         constraints += edge.tail.constraint_homogenization(zv[i] - ze_tail[k], yv[i] - ye[k])
