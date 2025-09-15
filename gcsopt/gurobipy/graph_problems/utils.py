@@ -110,7 +110,7 @@ def set_solution(model, conic_graph, yv, zv, ye, ze, tol, callback=None):
         solve_time = model.Runtime)
     
     # Set bounds from callback.
-    if callback is not None:
+    if callback is not None and callback.save_bounds:
         callback.callback_times.append(model.Runtime)
         callback.lower_bounds.append(model.ObjVal)
         callback.upper_bounds.append(model.ObjVal)
