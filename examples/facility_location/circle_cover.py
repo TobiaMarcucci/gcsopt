@@ -44,6 +44,14 @@ for points in mesh:
     prob.solve()
     radii.append(radius.value)
 
+# Compute maximum radius.
+constraints = []
+for points in mesh:
+    constraints += [cp.norm2(point - center) <= radius for point in points]
+prob = cp.Problem(cp.Minimize(radius), constraints)
+prob.solve()
+max_radius = radius.value
+
 # Add all circles (facilities).
 circles = []
 min_radius = min(radii)
@@ -61,7 +69,7 @@ for i, points in enumerate(mesh):
     triangle = graph.add_vertex(f"t{i}")
     center = triangle.add_variable(2)
     radius = triangle.add_variable(1)
-    triangle.add_constraints([center >= l, center <= u, radius >= radii[i]])
+    triangle.add_constraints([radius >= radii[i], radius <= max_radius])
     for point in points:
         triangle.add_constraint(cp.norm2(point - center) <= radius)
     triangles.append(triangle)
@@ -80,7 +88,7 @@ if plot_bounds:
     assert importlib.util.find_spec("gurobipy")
     from gcsopt.gurobipy.graph_problems.facility_location import facility_location
     from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-    params = {"OutputFlag": 0}
+    params = {"OutputFlag": 1}
     facility_location(graph, gurobi_parameters=params, save_bounds=plot_bounds)
     plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
 else:
