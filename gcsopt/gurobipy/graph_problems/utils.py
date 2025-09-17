@@ -26,9 +26,12 @@ def constrain_in_cone(model, z, K):
 
     # Second order cone constraint.
     elif K == cp.SOC:
-        s = model.addVar() # Nonnegative slack variable.
-        model.addConstr(z[0] == s)
-        model.addConstr(z[1:] @ z[1:] <= s ** 2) # Convex for gurobi.
+        z0 = model.addVar() # Nonnegative slack variable.
+        z1 = model.addMVar(z.size - 1, lb=-np.inf)
+        model.addConstr(z[0] == z0)
+        model.addConstr(z[1:] == z1)
+        quad_expr = gp.quicksum(z.item() * z.item() for z in z1)
+        model.addQConstr(quad_expr <= z0 * z0) # Convex for gurobi.
 
     # There are no other constraints we can support for MICPs.
     else:
@@ -52,7 +55,7 @@ def edge_constraint_homogenization(model, edge, xv, xw, xe, y):
     x = gp.concatenate((xv, xw, xe))
     constraint_homogenization(model, edge, x, y)
 
-def define_variables(model, conic_graph, binary, add_yv=False):
+def define_variables(model, conic_graph, binary=True, add_yv=False):
 
     # Binary variables.
     vtype = GRB.BINARY if binary else GRB.CONTINUOUS
@@ -87,24 +90,25 @@ def enforce_edge_programs(model, conic_graph, ye, ze, ze_tail, ze_head):
 
 def set_solution(model, conic_graph, yv, zv, ye, ze, tol, callback=None):
 
-    # Set vertex binaries.
-    if yv is None:
-        yv_value = np.ones(conic_graph.num_vertices())
-    else:
-        yv_value = yv.X
-
     # Set problem value and stats.
-    conic_graph.value = model.ObjVal
     if model.status == 2:
         conic_graph.status = "optimal"
+        conic_graph.value = model.ObjVal
     elif model.status == 3:
         conic_graph.status = "infeasible"
+        conic_graph.value = np.inf
     elif model.status == 4:
         conic_graph.status = "infeasible_or_unbounded"
+        conic_graph.value = None
     elif model.status == 5:
         conic_graph.status = "unbounded"
+        conic_graph.value = - np.inf
+    elif model.status == 12:
+        conic_graph.status = "numeric_error"
+        conic_graph.value = model.ObjVal
     else:
         conic_graph.status = model.status
+        conic_graph.value = None
     conic_graph.solver_stats = cp.problems.problem.SolverStats(
         solver_name = 'GUROBI',
         solve_time = model.Runtime)
@@ -121,11 +125,12 @@ def set_solution(model, conic_graph, yv, zv, ye, ze, tol, callback=None):
             callback.upper_bounds])
 
     # Set vertex variable values.
-    for vertex, y, z in zip(conic_graph.vertices, yv_value, zv):
+    for i, vertex in enumerate(conic_graph.vertices):
         if model.status in [2, 12, 13]: # Optimal, numeric error, suboptimal.
+            y = 1 if yv is None else yv[i].X
             vertex.binary_variable.value = y
             if y > tol:
-                vertex.x.value = z.X / y
+                vertex.x.value = zv[i].X / y
             else:
                 vertex.x.value = None
         else:
