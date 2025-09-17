@@ -355,7 +355,7 @@ class GraphOfConvexSets(Graph):
         restriction = rounding_fn(self, source, target)
         return restriction
 
-    def solve_convex_restriction(self, vertices, edges):
+    def solve_convex_restriction(self, vertices, edges, **kwargs):
         """
         Solves convex program obtained by discarding all the vertices and edges
         that are not in the given lists.
@@ -381,7 +381,7 @@ class GraphOfConvexSets(Graph):
 
         # Solve convex program.
         prob = cp.Problem(cp.Minimize(cost), constraints)
-        prob.solve()
+        prob.solve(**kwargs)
 
         # Set problem value and stats.
         self.value = prob.value
