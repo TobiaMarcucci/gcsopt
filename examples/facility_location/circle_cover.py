@@ -25,7 +25,6 @@ mesh = np.array([
 ])
 
 # Problem parameters.
-circle_cost = 0 # Fixed cost of using a circle.
 num_circles = 5 # Maximum number of circles.
 
 # Initialize empty graph.
@@ -35,73 +34,66 @@ graph = GraphOfConvexSets()
 l = np.min(np.vstack(mesh), axis=0)
 u = np.max(np.vstack(mesh), axis=0)
 
-# Compute minimum radius.
-min_radius = np.inf
-r = cp.Variable()
-c = cp.Variable(2)
+# Compute minimum radii.
+radii = []
+radius = cp.Variable()
+center = cp.Variable(2)
 for points in mesh:
-    constraints = [cp.norm2(p - c) <= r for p in points]
-    prob = cp.Problem(cp.Minimize(r), constraints)
+    constraints = [cp.norm2(point - center) <= radius for point in points]
+    prob = cp.Problem(cp.Minimize(radius), constraints)
     prob.solve()
-    min_radius = min(min_radius, r.value)
-
-# Compute maximum radius.
-constraints = []
-for points in mesh:
-    constraints += [cp.norm2(p - c) <= r for p in points]
-    prob = cp.Problem(cp.Minimize(r), constraints)
-    prob.solve()
-    max_radius = r.value
+    radii.append(radius.value)
 
 # Add all circles (facilities).
 circles = []
+min_radius = min(radii)
 for i in range(num_circles):
     circle = graph.add_vertex(f"c{i}")
     center = circle.add_variable(2)
     radius = circle.add_variable(1)
-    circle.add_constraints([center >= l, center <= u])
-    circle.add_constraints([radius >= min_radius, radius <= max_radius])
-    circle.add_cost(circle_cost + np.pi * radius ** 2)
+    circle.add_constraints([center >= l, center <= u, radius >= min_radius])
+    circle.add_cost(np.pi * radius ** 2)
     circles.append(circle)
 
 # Add all triangles (clients).
 triangles = []
-for i in range(len(mesh)):
+for i, points in enumerate(mesh):
     triangle = graph.add_vertex(f"t{i}")
-    slack = triangle.add_variable(1) # Necessary to add at least one variable.
-    triangle.add_constraint(slack == 0)
+    center = triangle.add_variable(2)
+    radius = triangle.add_variable(1)
+    triangle.add_constraints([center >= l, center <= u, radius >= radii[i]])
+    for point in points:
+        triangle.add_constraint(cp.norm2(point - center) <= radius)
     triangles.append(triangle)
 
 # Add edge from every circle to every triangle.
 for circle in circles:
-    center, radius = circle.variables
-    for points, triangle in zip(mesh, triangles):
+    for triangle in triangles:
         edge = graph.add_edge(circle, triangle)
-        for point in points:
-            edge.add_constraint(cp.norm2(point - center) <= radius)
+        for v_circle, v_triangle in zip(circle.variables, triangle.variables):
+            edge.add_constraint(v_circle == v_triangle)
 
 # Solve problem.
-plot_bounds = False
+plot_bounds = True
 if plot_bounds:
     import importlib.util
     assert importlib.util.find_spec("gurobipy")
     from gcsopt.gurobipy.graph_problems.facility_location import facility_location
     from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-    params = {"OutputFlag": 1, "QCPDual": 1}
-    plot_bounds = True
+    params = {"OutputFlag": 0}
     facility_location(graph, gurobi_parameters=params, save_bounds=plot_bounds)
     plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
 else:
     graph.solve_facility_location(verbose=True, solver="GUROBI")
-print('Problem status:', graph.status)
-print('Optimal value:', graph.value)
+print("Problem status:", graph.status)
+print("Optimal value:", graph.value)
+print("Solver time:", graph.solver_stats.solve_time)
 
 # Plot solution.
 plt.figure()
 plt.grid()
-plt.gca().set_axisbelow(True) 
+plt.gca().set_axisbelow(True)
 plt.axis("square")
-limits = np.array([l - 1, u + 1])
 plt.xlim([l[0] - 1, u[0] + 1])
 plt.ylim([l[1] - 1, u[1] + 1])
 plt.xticks(range(l[0] - 1, u[0] + 2))

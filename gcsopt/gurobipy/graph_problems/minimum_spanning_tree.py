@@ -126,4 +126,4 @@ def minimum_spanning_tree(convex_graph, root=None, lazy_constraints=True, binary
     conic_graph = convex_graph.to_conic()
     conic_root = conic_graph.get_vertex(root.name) if root else None
     minimum_spanning_tree_conic(conic_graph, conic_root, lazy_constraints, binary, tol, gurobi_parameters, save_bounds)
-    convex_graph._set_solution(conic_graph) 
+    convex_graph._set_solution(conic_graph)

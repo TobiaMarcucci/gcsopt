@@ -1,8 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
 from gcsopt.gurobipy.graph_problems.utils import (create_environment,
-    define_variables, enforce_edge_programs, constraint_homogenization,
-    set_solution, BaseCallback)
+    define_variables, enforce_edge_programs, set_solution, BaseCallback)
 
 def shortest_path_conic(conic_graph, source, target, binary, tol, gurobi_parameters=None, save_bounds=False):
 

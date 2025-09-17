@@ -40,8 +40,7 @@ def facility_location_conic(conic_graph, binary, tol, gurobi_parameters=None, sa
     # Edge constraints.
     for k, edge in enumerate(conic_graph.edges):
         i = conic_graph.vertex_index(edge.tail)
-        tail = conic_graph.vertices[i]
-        constraint_homogenization(model, tail, zv[i] - ze_tail[k], yv[i] - ye[k])
+        constraint_homogenization(model, edge.tail, zv[i] - ze_tail[k], yv[i] - ye[k])
         
     # Set objective.
     model.setObjective(cost, GRB.MINIMIZE)
