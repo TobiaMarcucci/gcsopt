@@ -2,6 +2,7 @@ import cvxpy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 from gcsopt import GraphOfConvexSets
+from gcsopt.gurobipy.utils import has_gurobi
 
 # Triangular mesh for 2d robot link.
 mesh = np.array([
@@ -44,14 +45,6 @@ for points in mesh:
     prob.solve()
     radii.append(radius.value)
 
-# Compute maximum radius.
-constraints = []
-for points in mesh:
-    constraints += [cp.norm2(point - center) <= radius for point in points]
-prob = cp.Problem(cp.Minimize(radius), constraints)
-prob.solve()
-max_radius = radius.value
-
 # Add all circles (facilities).
 circles = []
 min_radius = min(radii)
@@ -67,30 +60,28 @@ for i in range(num_circles):
 triangles = []
 for i, points in enumerate(mesh):
     triangle = graph.add_vertex(f"t{i}")
-    center = triangle.add_variable(2)
-    radius = triangle.add_variable(1)
-    triangle.add_constraints([radius >= radii[i], radius <= max_radius])
-    for point in points:
-        triangle.add_constraint(cp.norm2(point - center) <= radius)
+    dummy = triangle.add_variable(1)
+    triangle.add_constraint(dummy == 0)
     triangles.append(triangle)
 
 # Add edge from every circle to every triangle.
 for circle in circles:
-    for triangle in triangles:
+    center, radius = circle.variables
+    for triangle, points in zip(triangles, mesh):
         edge = graph.add_edge(circle, triangle)
-        for v_circle, v_triangle in zip(circle.variables, triangle.variables):
-            edge.add_constraint(v_circle == v_triangle)
+        for point in points:
+            edge.add_constraint(cp.norm2(point - center) <= radius)
 
 # Solve problem.
-plot_bounds = True
-if plot_bounds:
-    import importlib.util
-    assert importlib.util.find_spec("gurobipy")
+
+if has_gurobi():
     from gcsopt.gurobipy.graph_problems.facility_location import facility_location
-    from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
     params = {"OutputFlag": 1}
+    plot_bounds = True
     facility_location(graph, gurobi_parameters=params, save_bounds=plot_bounds)
-    plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
+    if plot_bounds:
+        from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
+        plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
 else:
     graph.solve_facility_location(verbose=True, solver="GUROBI")
 print("Problem status:", graph.status)
