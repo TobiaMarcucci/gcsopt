@@ -18,16 +18,16 @@ charge_rate = 1
 np.random.seed(0)
 centers = np.full((num_islands, 2), np.inf) # inf ensures no intersection with sampled islands.
 radii = np.zeros(num_islands)
-sampled_islands = 0
-while sampled_islands < num_islands:
+i = 0
+while i < num_islands:
     center = np.random.uniform(l, u)
     radius = np.random.uniform(min_radius, max_radius)
 
     # Discard island if it intersects with a previous ones.
     if all(np.linalg.norm(center - centers, axis=1) > radius + radii):
-        centers[sampled_islands] = center
-        radii[sampled_islands] = radius
-        sampled_islands += 1
+        centers[i] = center
+        radii[i] = radius
+        i += 1
 
 # Select start and goal islands.
 start = np.argmin(np.linalg.norm(centers - l, axis=1))
