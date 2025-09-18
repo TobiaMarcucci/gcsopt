@@ -2,6 +2,7 @@ import numpy as np
 import cvxpy as cp
 import matplotlib.pyplot as plt
 from gcsopt import GraphOfConvexSets
+from gcsopt.gurobipy.utils import has_gurobi
 
 # Problem data.
 num_islands = 100
@@ -12,7 +13,6 @@ u = np.array([5, 1])
 speed = 1
 discharge_rate = 5
 charge_rate = 1
-max_range = speed / discharge_rate
 
 # Generate random islands that do not intersect.
 np.random.seed(0)
@@ -39,51 +39,47 @@ graph = GraphOfConvexSets()
 # One vertex for every island, including start and goal.
 for i, (center, radius) in enumerate(zip(centers, radii)):
     vertex = graph.add_vertex(i)
-    q = vertex.add_variable(2) # Helicopted landing position on the island.
+    q = vertex.add_variable(2) # Helicopter landing position on the island.
     z = vertex.add_variable(2) # Batter level at landing and take off.
-    t = vertex.add_variable(1) # Recharge time.
+    t = (z[1] - z[0]) / charge_rate # Recharge time.
     vertex.add_cost(t)
     vertex.add_constraints([
         cp.norm2(q - center) <= radius,
-        z >= 0, z <= 1,
-        t >= 0, t <= 1 / charge_rate,
-        z[1] == z[0] + charge_rate * t])
+        z >= 0, z <= 1, t >= 0])
     
     # Battery is fully charged at the beginning.
     if i == start:
         vertex.add_constraint(z[0] == 1)
 
+# Helper function that check if two islands should be connected.
+max_range = speed / discharge_rate
+def connect(i, j):
+    center_dist = np.linalg.norm(centers[i] - centers[j])
+    island_dist = center_dist - radii[i] - radii[j]
+    return i != j and island_dist < max_range
+
 # Edges between pairs of islands that are close enough.
-for i, (center_i, radius_i) in enumerate(zip(centers, radii)):
-    vertex_i = graph.get_vertex(i)
-    qi, zi = vertex_i.variables[:2]
-    for j, (center_j, radius_j) in enumerate(zip(centers, radii)):
-        if i != j:
-            center_dist = np.linalg.norm(center_i - center_j)
-            island_dist = center_dist - radius_i - radius_j
-            if island_dist < max_range: # Necessary condition for flight feasibility.
-                vertex_j = graph.get_vertex(j)
-                qj, zj = vertex_j.variables[:2]
-                edge = graph.add_edge(vertex_i, vertex_j)
-                t = edge.add_variable(1) # Flight time between islands i and j.
-                edge.add_cost(t)
-                edge.add_constraints([
-                    t >= cp.norm2(qi - qj) / speed,
-                    zi[1] == zj[0] + discharge_rate * t])
-                
+for i, vertex_i in enumerate(graph.vertices):
+    qi, zi = vertex_i.variables
+    for j, vertex_j in enumerate(graph.vertices):
+        if connect(i, j):
+            qj, zj = vertex_j.variables
+            tij = (zi[1] - zj[0]) / discharge_rate # Flight time.
+            edge = graph.add_edge(vertex_i, vertex_j)
+            edge.add_cost(tij)
+            edge.add_constraint(tij >= cp.norm2(qi - qj) / speed)
+
 # Solve shortest path problem from start to goal points.
 source = graph.vertices[start]
 target = graph.vertices[goal]
-plot_bounds = True
-if plot_bounds:
-    import importlib.util
-    assert importlib.util.find_spec("gurobipy")
+if has_gurobi():
     from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
-    from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-    params = {"OutputFlag": 0}
+    params = {"OutputFlag": 1}
     plot_bounds = True
-    shortest_path(graph, source, target, binary=False, gurobi_parameters=params, save_bounds=plot_bounds)
-    plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "flight_bounds")
+    shortest_path(graph, source, target, gurobi_parameters=params, save_bounds=plot_bounds)
+    if plot_bounds:
+        from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
+        plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "flight_bounds")
 else:
     graph.solve_shortest_path(source, target, verbose=True, solver="GUROBI")
 print("Problem status:", graph.status)
@@ -119,14 +115,16 @@ battery_levels = []
 times = [0]
 vertex = source
 while vertex != target:
-    z, t = vertex.variables[1:]
-    battery_levels.extend(z.value)
-    times.extend(times[-1] + t.value)
+    zi = vertex.variables[1].value
+    ti = (zi[1] - zi[0]) / charge_rate
+    battery_levels.extend(zi)
+    times.append(times[-1] + ti)
     for edge in graph.outgoing_edges(vertex):
         if np.isclose(edge.binary_variable.value, 1):
-            t = edge.variables[0]
-            times.extend(times[-1] + t.value)
             vertex = edge.head
+            zj = vertex.variables[1].value
+            tij = (zi[1] - zj[0]) / discharge_rate # Flight time.
+            times.append(times[-1] + tij)
             break
 battery_levels.append(target.variables[1].value[0])
 
