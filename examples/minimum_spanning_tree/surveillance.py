@@ -5,10 +5,9 @@ import matplotlib.patches as patches
 from gcsopt import GraphOfConvexSets
 
 # This file runs only with gurobipy installed. The deafault MSTP cannot solve this.
-import importlib.util
-assert importlib.util.find_spec("gurobipy")
+from gcsopt.gurobipy.utils import has_gurobi
+assert has_gurobi()
 from gcsopt.gurobipy.graph_problems.minimum_spanning_tree import minimum_spanning_tree
-from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
 
 # Generate random rooms.
 np.random.seed(0)
@@ -18,10 +17,9 @@ U = np.zeros((*sides, 2))
 for i in range(sides[0]):
     for j in range(sides[1]):
         c = (i, j)
+        box_sides = [1, 2]
         if (i + j) % 2 == 0:
-            box_sides = [2, 1]
-        else:
-            box_sides = [1, 2]
+            box_sides = box_sides[::-1]
         diag = np.multiply(np.random.uniform(2/3, 1, 2), box_sides) / 2
         L[i, j] = c - diag
         U[i, j] = c + diag
@@ -38,35 +36,34 @@ graph = GraphOfConvexSets() # Directed by default.
 for i, (l, u) in enumerate(zip(L, U)):
     v = graph.add_vertex(i)
     x = v.add_variable(2)
+    v.add_constraints([x >= l, x <= u])
+    D = np.diag(2 / (u - l))
     c = (l + u) / 2
-    v.add_constraint(x >= l)
-    v.add_constraint(x <= u)
-    D = np.diag(1 / (u - l))
     v.add_cost(cp.norm_inf(D @ (x - c)))
 
 # Add edges.
-def room_intersect(i, j):
-    return np.all(L[i] <= U[j]) and np.all(L[j] <= U[i])
-for i, (li, ui) in enumerate(zip(L, U)):
-    for j in range(len(L)):
-        if i != j and j != main_room and room_intersect(i, j):
-            tail = graph.get_vertex(i)
-            head = graph.get_vertex(j)
-            e = graph.add_edge(tail, head)
+def connect(i, j):
+    return i != j and np.all(L[i] <= U[j]) and np.all(L[j] <= U[i])
+for i, tail in enumerate(graph.vertices):
+    li, ui = L[i], U[i]
+    for j, head in enumerate(graph.vertices):
+        if connect(i, j) and j != main_room:
+            edge = graph.add_edge(tail, head)
             x_head = head.variables[0]
-            e.add_constraint(x_head >= li)
-            e.add_constraint(x_head <= ui)
+            edge.add_constraints([x_head >= li, x_head <= ui])
 
 # Solve problem with gurobipy (way too big for deafault MSTP method).
 root = graph.vertices[main_room]
-params = {"OutputFlag": 0}
+params = {"OutputFlag": 1}
 plot_bounds = True
 minimum_spanning_tree(graph, root, gurobi_parameters=params, save_bounds=plot_bounds)
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
+print("Solver time:", graph.solver_stats.solve_time)
 
 # Plot upper and lower bounds from gurobi.
 if plot_bounds:
+    from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
     plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "surveillance_bounds")
 
 # Plot rooms and optimal spanning tree.
