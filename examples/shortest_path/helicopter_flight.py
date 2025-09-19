@@ -5,11 +5,11 @@ from gcsopt import GraphOfConvexSets
 from gcsopt.gurobipy.utils import has_gurobi
 
 # Problem data.
-num_islands = 100
+num_islands = 300
 min_radius = .02
 max_radius = .1
 l = np.array([0, 0])
-u = np.array([5, 1])
+u = np.array([5, 2])
 speed = 1
 discharge_rate = 5
 charge_rate = 1
@@ -74,7 +74,7 @@ source = graph.vertices[start]
 target = graph.vertices[goal]
 if has_gurobi():
     from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
-    params = {"OutputFlag": 1}
+    params = {"OutputFlag": 0, "PreMIQCPForm": 1}
     plot_bounds = True
     shortest_path(graph, source, target, gurobi_parameters=params, save_bounds=plot_bounds)
     if plot_bounds:
@@ -87,7 +87,7 @@ print("Optimal value:", graph.value)
 print("Solver time", graph.solver_stats.solve_time)
 
 # Plot optimal flight trajectory.
-plt.figure(figsize=(10, 2))
+plt.figure(figsize=(10, 4))
 graph.plot_2d_solution()
 
 # Plot ocean.
@@ -107,6 +107,7 @@ plt.gca().set_aspect("equal")
 limits = np.array([l_plot, u_plot])
 plt.xlim(limits[:, 0])
 plt.ylim(limits[:, 1])
+plt.yticks([0, 1, 2])
 plt.savefig("flight.pdf", bbox_inches="tight")
 plt.show()
 
@@ -134,8 +135,8 @@ end_times = (times[0], times[-1])
 plt.plot(end_times, (0, 0), "r--") # Minimum level.
 plt.plot(end_times, (1, 1), "g--") # Maximum level.
 plt.plot(times, battery_levels)
-plt.xlabel("Time")
-plt.ylabel("Battery level")
+plt.xlabel("time")
+plt.ylabel("battery level")
 plt.xlim(end_times)
 plt.grid()
 plt.savefig("battery.pdf", bbox_inches="tight")
