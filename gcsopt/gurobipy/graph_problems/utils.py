@@ -30,7 +30,7 @@ def constrain_in_cone(model, z, K):
         z1 = model.addMVar(z.size - 1, lb=-np.inf)
         model.addConstr(z[0] == z0)
         model.addConstr(z[1:] == z1)
-        quad_expr = gp.quicksum(z.item() * z.item() for z in z1)
+        quad_expr = gp.quicksum(zi.item() * zi.item() for zi in z1)
         model.addQConstr(quad_expr <= z0 * z0) # Convex for gurobi.
 
     # There are no other constraints we can support for MICPs.

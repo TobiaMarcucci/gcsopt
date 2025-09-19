@@ -14,15 +14,15 @@ np.random.seed(0)
 sides = np.array([60, 15])
 L = np.zeros((*sides, 2))
 U = np.zeros((*sides, 2))
+low = 2 / 3
+high = 1
 for i in range(sides[0]):
     for j in range(sides[1]):
+        box_sides = [2, 1] if (i + j) % 2 == 0 else [1, 2]
+        d = np.multiply(np.random.uniform(low, high, 2), box_sides) / 2
         c = (i, j)
-        box_sides = [1, 2]
-        if (i + j) % 2 == 0:
-            box_sides = box_sides[::-1]
-        diag = np.multiply(np.random.uniform(2/3, 1, 2), box_sides) / 2
-        L[i, j] = c - diag
-        U[i, j] = c + diag
+        L[i, j] = c - d
+        U[i, j] = c + d
 L = np.vstack(L)
 U = np.vstack(U)
 
@@ -37,7 +37,7 @@ for i, (l, u) in enumerate(zip(L, U)):
     v = graph.add_vertex(i)
     x = v.add_variable(2)
     v.add_constraints([x >= l, x <= u])
-    D = np.diag(2 / (u - l))
+    D = np.diag(.2 / (u - l))
     c = (l + u) / 2
     v.add_cost(cp.norm_inf(D @ (x - c)))
 

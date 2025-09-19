@@ -2,18 +2,14 @@ import cvxpy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 from gcsopt import GraphOfConvexSets
-from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
+from gcsopt.gurobipy.utils import has_gurobi
 
 # Problem data.
 np.random.seed(0)
-n_kids = 15
+n_kids = 18
+max_walk = 3
 school_position = np.array([45, 7])
 kid_positions = np.random.randint([30, 1], [60, 12], (n_kids, 2))
-
-# Bounding box for all positions.
-positions = np.vstack((school_position, kid_positions))
-l = np.min(positions, axis=0)
-u = np.max(positions, axis=0)
 
 # Initialize empty graph.
 graph = GraphOfConvexSets(directed=False)
@@ -22,13 +18,12 @@ graph = GraphOfConvexSets(directed=False)
 for i, position in enumerate(kid_positions):
     kid = graph.add_vertex(i + 1)
     x = kid.add_variable(2)
-    d = kid.add_variable(1)[0] # L1 distance traveled by kid i.
-    kid.add_constraints([
-        x >= l,
-        x <= u,
-        d >= cp.norm1(x - position),
-        d <= cp.norm1(school_position - position)])
-    kid.add_cost(d)
+    d = kid.add_variable(2) # Slack variables for L1 norm.
+    kid.add_constraints([ # Implementing this using cp.norm1 is less efficient.
+        d >= x - position,
+        d >= position - x,
+        sum(d) <= max_walk])
+    kid.add_cost(sum(d))
 
 # Vertex for the school.
 school = graph.add_vertex(0)
@@ -45,22 +40,16 @@ for i, tail in enumerate(graph.vertices):
 
 # Solve problem using gurobipy if possible (uses lazy constraints and is much
 # faster). Otherwise use exponential formulation and default cvxpy solver.
-import importlib.util
-has_gurobi = importlib.util.find_spec("gurobipy")
-if has_gurobi:
+if has_gurobi():
     from gcsopt.gurobipy.graph_problems.traveling_salesman import traveling_salesman
+    parameters = {"OutputFlag": 1, "Presolve": 0}
     plot_bounds = True
-    parameters = {"OutputFlag": 0}
     traveling_salesman(graph, gurobi_parameters=parameters, save_bounds=plot_bounds)
-    print("Solver time:", graph.solver_stats.solve_time)
+    if plot_bounds:
+        from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
+        plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "bus_bounds")
 else:
     graph.solve_traveling_salesman()
-
-# Plot upper and lower bounds from gurobi.
-if plot_bounds and has_gurobi:
-    bounds = graph.solver_stats.callback_bounds
-    bounds[1] = np.where(bounds[1] >= 0, bounds[1], np.nan)
-    plot_optimal_value_bounds(bounds, "bus_bounds")
 
 # Helper function that draws an L1 path between two points.
 def l1_path(tail, head, color, ls):
@@ -98,6 +87,11 @@ plt.scatter(*nans[0], fc="white", ec="blue", label="home")
 plt.scatter(*nans[0], c="blue", marker="x", label="pick-up point")
 plt.plot(*nans, c="blue", ls="-", label="kid's walk")
 plt.plot(*nans, c="red", ls="--", label="bus tour")
+
+# Bounding box for all positions.
+positions = np.vstack((school_position, kid_positions))
+l = np.min(positions, axis=0)
+u = np.max(positions, axis=0)
 
 # Additional plot settings.
 plt.xticks(range(l[0] - 1, u[0] + 2))
