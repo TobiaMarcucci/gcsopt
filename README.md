@@ -24,6 +24,29 @@ cd gcsopt
 pip install .
 ```
 
+## Mixed-integer solvers
+
+`GCSOPT` reformulates a GCS problem as a mixed-integer program and solves the latter using one of the [solvers available in `CVXPY`](https://www.cvxpy.org/tutorial/solvers/index.html).
+[`Gurobi`](https://www.gurobi.com/) and [`MOSEK`](https://www.mosek.com/) are two high-performance mixed-integer solvers that are free for academic use.
+Once one of these solvers is installed, `CVXPY` will automatically detect it.
+You can verify your installation by running:
+
+```python
+import cvxpy
+print(cvxpy.installed_solvers())
+```
+If `GUROBI` or `MOSEK` appears in the list, you are ready to use `GCSOPT`.
+
+### Installation of Gurobi
+
+- Get a `Gurobi` license [here](https://www.gurobi.com/lp/all/licensing/) or [here for academic use](https://www.gurobi.com/academia/academic-program-and-licenses).
+- Install the Python package `gurobipy` using your favorite installation method as described [here](https://support.gurobi.com/hc/en-us/articles/360044290292-How-do-I-install-Gurobi-for-Python).
+
+### Installation of MOSEK
+
+- Get a `MOSEK` license [here](https://www.mosek.com/license/request/) or [here for academic use](https://www.mosek.com/products/academic-licenses/).
+- Install the Python package `mosek` using your favorite installation method as described [here](https://docs.mosek.com/11.0/pythonapi/install-interface.html).
+
 ## Example
 Here is a minimal example of how to use `GCSOPT` for solving a shortest-path problem in GCS:
 ```python
@@ -95,32 +118,10 @@ Variable (2, 1) optimal value: [1.75586443 1.17434971]
 Variable (2, 2) optimal value: [1.91493467 1.71231286]
 ```
 
-## Mixed-integer solvers
-
-`GCSOPT` reformulates a GCS problem as a mixed-integer program and solves the latter using one of the [solvers available in `CVXPY`](https://www.cvxpy.org/tutorial/solvers/index.html).
-[`Gurobi`](https://www.gurobi.com/) and [`MOSEK`](https://www.mosek.com/) are two high-performance mixed-integer solvers that are free for academic use.
-Once one of these solvers is installed, `CVXPY` will automatically detect it.
-You can verify your installation by running:
-
-```python
-import cvxpy
-print(cvxpy.installed_solvers())
-```
-
-### Installation of Gurobi
-
-- Get a `Gurobi` license [here](https://www.gurobi.com/lp/all/licensing/) or [here for academic use](https://www.gurobi.com/academia/academic-program-and-licenses).
-- Install `gurobipy` using your favorite installation method as described [here](https://support.gurobi.com/hc/en-us/articles/360044290292-How-do-I-install-Gurobi-for-Python).
-
-### Installation of MOSEK
-
-- Get a `MOSEK` license [here](https://www.mosek.com/license/request/) or [here for academic use](https://www.mosek.com/products/academic-licenses/).
-- Install `mosek` using your favorite installation method as described [here](https://docs.mosek.com/11.0/pythonapi/install-interface.html).
-
-If `GUROBI` or `MOSEK` appears in the list, you’re ready to use `GCSOPT`.
-
 ## License
+
 This project is licensed under the MIT License.
 
 ## Author
+
 Developed and maintained by Tobia Marcucci.
