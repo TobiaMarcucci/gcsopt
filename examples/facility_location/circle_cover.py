@@ -36,18 +36,17 @@ l = np.min(np.vstack(mesh), axis=0)
 u = np.max(np.vstack(mesh), axis=0)
 
 # Compute minimum radii.
-radii = []
+min_radius = np.inf
 radius = cp.Variable()
 center = cp.Variable(2)
 for points in mesh:
     constraints = [cp.norm2(point - center) <= radius for point in points]
     prob = cp.Problem(cp.Minimize(radius), constraints)
     prob.solve()
-    radii.append(radius.value)
+    min_radius = min(min_radius, radius.value)
 
 # Add all circles (facilities).
 circles = []
-min_radius = min(radii)
 for i in range(num_circles):
     circle = graph.add_vertex(f"c{i}")
     center = circle.add_variable(2)
@@ -73,17 +72,15 @@ for circle in circles:
             edge.add_constraint(cp.norm2(point - center) <= radius)
 
 # Solve problem.
-
 if has_gurobi():
     from gcsopt.gurobipy.graph_problems.facility_location import facility_location
-    params = {"OutputFlag": 1}
-    plot_bounds = True
-    facility_location(graph, gurobi_parameters=params, save_bounds=plot_bounds)
-    if plot_bounds:
-        from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-        plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "cover_bounds")
+    params = {"OutputFlag": 0}
+    save_bounds = False
+    facility_location(graph, gurobi_parameters=params, save_bounds=save_bounds)
+    if save_bounds:
+        np.save("cover_bounds.npy", graph.solver_stats.callback_bounds)
 else:
-    graph.solve_facility_location(verbose=True, solver="GUROBI")
+    graph.solve_facility_location()
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time:", graph.solver_stats.solve_time)

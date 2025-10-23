@@ -54,17 +54,14 @@ for i, tail in enumerate(graph.vertices):
 
 # Solve problem with gurobipy (way too big for deafault MSTP method).
 root = graph.vertices[main_room]
-params = {"OutputFlag": 1}
-plot_bounds = True
-minimum_spanning_tree(graph, root, gurobi_parameters=params, save_bounds=plot_bounds)
+params = {"OutputFlag": 0}
+save_bounds = False
+minimum_spanning_tree(graph, root, gurobi_parameters=params, save_bounds=save_bounds)
+if save_bounds:
+    np.save("surveillance_bounds.npy", graph.solver_stats.callback_bounds)
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time:", graph.solver_stats.solve_time)
-
-# Plot upper and lower bounds from gurobi.
-if plot_bounds:
-    from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-    plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "surveillance_bounds")
 
 # Plot rooms and optimal spanning tree.
 plt.figure(figsize=sides/2)

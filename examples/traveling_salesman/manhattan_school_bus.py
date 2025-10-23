@@ -42,14 +42,16 @@ for i, tail in enumerate(graph.vertices):
 # faster). Otherwise use exponential formulation and default cvxpy solver.
 if has_gurobi():
     from gcsopt.gurobipy.graph_problems.traveling_salesman import traveling_salesman
-    parameters = {"OutputFlag": 1, "Presolve": 0}
-    plot_bounds = True
-    traveling_salesman(graph, gurobi_parameters=parameters, save_bounds=plot_bounds)
-    if plot_bounds:
-        from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-        plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "bus_bounds")
+    parameters = {"OutputFlag": 0}
+    save_bounds = False
+    traveling_salesman(graph, gurobi_parameters=parameters, save_bounds=save_bounds)
+    if save_bounds:
+        np.save("bus_bounds.npy", graph.solver_stats.callback_bounds)
 else:
     graph.solve_traveling_salesman()
+print("Problem status:", graph.status)
+print("Optimal value:", graph.value)
+print("Solver time", graph.solver_stats.solve_time)
 
 # Helper function that draws an L1 path between two points.
 def l1_path(tail, head, color, ls):

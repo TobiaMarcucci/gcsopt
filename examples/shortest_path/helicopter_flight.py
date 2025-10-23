@@ -75,13 +75,12 @@ target = graph.vertices[goal]
 if has_gurobi():
     from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
     params = {"OutputFlag": 0, "PreMIQCPForm": 1}
-    plot_bounds = True
-    shortest_path(graph, source, target, gurobi_parameters=params, save_bounds=plot_bounds)
-    if plot_bounds:
-        from gcsopt.gurobipy.plot_utils import plot_optimal_value_bounds
-        plot_optimal_value_bounds(graph.solver_stats.callback_bounds, "flight_bounds")
+    save_bounds = False
+    shortest_path(graph, source, target, gurobi_parameters=params, save_bounds=save_bounds)
+    if save_bounds:
+        np.save("flight_bounds.npy", graph.solver_stats.callback_bounds)
 else:
-    graph.solve_shortest_path(source, target, verbose=True, solver="GUROBI")
+    graph.solve_shortest_path(source, target)
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time", graph.solver_stats.solve_time)
