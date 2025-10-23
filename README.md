@@ -48,7 +48,8 @@ If `GUROBI` or `MOSEK` appears in the list, you are ready to use `GCSOPT`.
 - Install the Python package `mosek` using your favorite installation method as described [here](https://docs.mosek.com/11.0/pythonapi/install-interface.html).
 
 ## Example
-Here is a minimal example of how to use `GCSOPT` for solving a shortest-path problem in GCS:
+Below is a minimal example of how to use `GCSOPT` for solving a shortest-path problem in GCS.
+
 ```python
 import cvxpy as cp
 from gcsopt import GraphOfConvexSets
@@ -118,6 +119,11 @@ Variable (2, 1) optimal value: [1.75586443 1.17434971]
 Variable (2, 2) optimal value: [1.91493467 1.71231286]
 ```
 
+## Contributing
+
+Contributions, bug reports, and feature requests are very welcome!  
+To contribute, please open an issue or submit a pull request on [GitHub](https://github.com/TobiaMarcucci/gcsopt).
+
 ## License
 
 This project is licensed under the MIT License.
@@ -125,3 +131,4 @@ This project is licensed under the MIT License.
 ## Author
 
 Developed and maintained by Tobia Marcucci.
+For questions or feedback, please contact [marcucci@ucsb.edu](mailto:marcucci@ucsb.edu).
