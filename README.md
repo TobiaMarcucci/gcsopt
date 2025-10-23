@@ -121,7 +121,7 @@ Variable (2, 2) optimal value: [1.91493467 1.71231286]
 
 ## Contributing
 
-Contributions, bug reports, and feature requests are very welcome!  
+Contributions, bug reports, and feature requests are very welcome!
 To contribute, please open an issue or submit a pull request on [GitHub](https://github.com/TobiaMarcucci/gcsopt).
 
 ## License
