@@ -1,7 +1,7 @@
 # GCSOPT
 
 Python library to solve optimization problems in Graphs of Convex Sets (GCS).
-For a detailed description of the algorithms implemented implemented in this library see the PhD thesis [Graphs of Convex Sets with Applications to Optimal Control and Motion Planning](https://dspace.mit.edu/handle/1721.1/156598?show=full).
+For a detailed description of the algorithms implemented in this library see the PhD thesis [Graphs of Convex Sets with Applications to Optimal Control and Motion Planning](https://dspace.mit.edu/handle/1721.1/156598?show=full).
 (Please note that the library recently changed name, and in the thesis it is called `gcspy`.)
 
 ## Main features
@@ -24,7 +24,6 @@ cd gcsopt
 pip install .
 ```
 
-
 ## Example
 Here is a minimal example of how to use gcsopt for solving a shortest-path problem in GCS:
 ```python
@@ -36,7 +35,7 @@ directed = True
 G = GraphOfConvexSets(directed)
 
 # Add vertices to graph.
-l = 3 # Side of vertex grid.
+l = 3 # Side length of vertex grid.
 r = .3 # Radius of vertex circles.
 for i in range(l):
     for j in range(l):
@@ -49,8 +48,8 @@ for i in range(l):
 for i in range(l):
     for j in range(l):
         cv = (i, j) # Name of vertex v.
-        v = G.get_vertex(cv) # Retrieve vertex from its name.
-        xv = v.variables[0] # Get first and only variable added to vertex.
+        v = G.get_vertex(cv) # Retrieve vertex using its name.
+        xv = v.variables[0] # Get first and only variable paired with vertex.
 
         # Add right and upward neighbors if not at grid boundary.
         neighbors = [(i + 1, j), (i, j + 1)] # Names of candidate neighbors.
@@ -64,7 +63,7 @@ for i in range(l):
 # Solve shortest-path problem.
 s = G.get_vertex((0, 0)) # Source vertex.
 t = G.get_vertex((l - 1, l - 1)) # Target vertex.
-G.solve_shortest_path(s, t) # Populates graph with result of optimization problem.
+G.solve_shortest_path(s, t) # Solve problem and populate graph with result.
 
 # Print solution statistics.
 print("Problem status:", G.status)
@@ -75,13 +74,13 @@ for v in G.vertices:
 
 # Plot optimal solution.
 import matplotlib.pyplot as plt
-plt.figure() # Initializes empty figure.
+plt.figure() # Initialize empty figure.
 G.plot_2d() # Plot graph of convex sets.
 G.plot_2d_solution() # Plot optimal subgraph.
 plt.show() # Show figure.
 ```
 
-The otput of this script is:
+The output of this script is:
 ```bash
 Problem status: optimal
 Optimal value: 2.4561622509772887
