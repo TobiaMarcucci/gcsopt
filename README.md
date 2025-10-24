@@ -1,8 +1,7 @@
 # GCSOPT
 
 `GCSOPT` is a Python library for solving optimization problems over Graphs of Convex Sets (GCS).
-For a detailed description of the algorithms implemented in this library see the PhD thesis [Graphs of Convex Sets with Applications to Optimal Control and Motion Planning](https://dspace.mit.edu/handle/1721.1/156598?show=full).
-(Please note that the library recently changed name, and in the thesis it is called `gcspy`.)
+For a detailed description of the algorithms implemented in this library see the article [A Unified and Scalable Method for Optimization over Graphs of Convex Sets](https://arxiv.org/abs/2510.20184).
 
 ## Main features
 
