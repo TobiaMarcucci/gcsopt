@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="gcsopt",
-    version="0.1.2",
+    version="0.1.3",
     description="Library for solving optimization problems over Graphs of Convex Sets (GCS).",
     long_description=long_description,
     long_description_content_type="text/markdown",
