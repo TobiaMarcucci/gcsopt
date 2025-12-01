@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "numpy",
-        "cvxpy >= 1.5",
+        "cvxpy >=1.5, <=1.7.1",
         "pytest",
     ],
 )

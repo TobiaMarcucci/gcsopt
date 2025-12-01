@@ -1,3 +1,3 @@
 numpy
-cvxpy >= 1.5
+cvxpy >=1.5, <=1.7.1
 pytest
