@@ -216,12 +216,12 @@ class ConvexProgram:
         conic_program = ConicProgram(cp_conic.x.size, id_to_range, self.binary_variable)
 
         # Define cost of conic program.
-        cd = cp_conic.c.toarray().flatten()
+        cd = cp_conic.q.toarray().flatten()
         conic_program.add_cost(cd[:-1], cd[-1])
 
         # Define constraints of conic program. Sparse matrices are converted to
         # dense arrays, since keeping them sparse seems to make things slower.
-        cols = cp_conic.c.shape[0]
+        cols = cp_conic.q.shape[0]
         Ab = cp_conic.A.toarray().reshape((-1, cols), order='F')
         K = [(type(c), c.size) for c in cp_conic.constraints]
         conic_program.add_constraints(Ab[:, :-1], Ab[:, -1], K)
