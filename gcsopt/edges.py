@@ -24,7 +24,7 @@ class ConicEdge(ConicProgram):
         sizes = (xv.size, xw.size, xe.size)
         expected_sizes = (self.tail.size, self.head.size, self.slack_size)
         if sizes != expected_sizes:
-            ValueError(
+            raise ValueError(
                 f"Size mismatch. Got vectors of size {sizes}. Expected vectors "
                 f"of size {expected_sizes}.")
                 
