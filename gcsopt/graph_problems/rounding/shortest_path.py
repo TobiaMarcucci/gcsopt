@@ -64,7 +64,7 @@ def randomized_dfs(graph, source, target, num_paths=5, max_trials=100):
         if len(paths) == num_paths:
             break
         path = single_dfs(graph, source, target)
-        if path not in paths:
+        if path is not None and path not in paths:
             paths.append(path)
 
     # solve convex restriction for each different path and keep best solution
