@@ -212,6 +212,17 @@ class ConvexProgram:
             stop = start + variable.size
             id_to_range[variable.id] = range(start, stop)
 
+        # Map original variable IDs to their reduced counterparts (e.g.,
+        # CvxAttr2Constr creates new variables for PSD/symmetric attributes).
+        var_id_map = chain.compose_var_id_map()
+        for variable in self.variables:
+            if variable.id not in id_to_range and variable.id in var_id_map:
+                mapped_ids = var_id_map[variable.id]
+                # TODO: Support complex variables by handling multiple
+                # mapped IDs (e.g., Complex2Real maps one ID to two).
+                if len(mapped_ids) == 1 and mapped_ids[0] in id_to_range:
+                    id_to_range[variable.id] = id_to_range[mapped_ids[0]]
+
         # Initialize empty conic program.
         conic_program = ConicProgram(cp_conic.x.size, id_to_range, self.binary_variable)
 
