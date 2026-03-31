@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import cvxpy as cp
-from gcsopt.programs import ConicProgram, ConvexProgram
+from gcsopt.programs import ConicProgram, ConvexProgram, SvecPSD
 
 class TestConicProgram(unittest.TestCase):
 
@@ -68,6 +68,29 @@ class TestConicProgram(unittest.TestCase):
         b = np.array([0] * 11 + [-1])
         K = [(cp.constraints.PSD, 9), (cp.constraints.NonNeg, 3)]
         self.sdp.add_constraints(A, b, K)
+
+        # Svec semidefinite program equal to the previous SDP. The svec of a
+        # symmetric 3x3 matrix extracts the lower triangle in column-major
+        # order with off-diagonals scaled by sqrt(2):
+        #   svec(M) = [M00, sqrt(2)*M10, sqrt(2)*M20, M11, sqrt(2)*M21, M22]
+        if SvecPSD is not None:
+            s2 = np.sqrt(2)
+            self.svec_sdp = ConicProgram(3)
+            self.svec_sdp.add_cost(c, d)
+            A = np.array([
+                [1, 0, 0],     # svec entry 0: M00 = x1
+                [0, s2, 0],    # svec entry 1: sqrt(2)*M10 = sqrt(2)*x2
+                [0, 0, s2],    # svec entry 2: sqrt(2)*M20 = sqrt(2)*x3
+                [1, 0, 0],     # svec entry 3: M11 = x1
+                [0, 0, 0],     # svec entry 4: sqrt(2)*M21 = 0
+                [1, 0, 0],     # svec entry 5: M22 = x1
+                [1, -1, 0],
+                [0, 1, -1],
+                [0, 0, 1],
+            ])
+            b = np.array([0] * 8 + [-1])
+            K = [(SvecPSD, 6), (cp.constraints.NonNeg, 3)]
+            self.svec_sdp.add_constraints(A, b, K)
 
     def test_add_cost(self):
 
@@ -166,6 +189,13 @@ class TestConicProgram(unittest.TestCase):
         cost = self.sdp.solve()
         self.assertAlmostEqual(cost, 4, places=4)
         np.testing.assert_array_almost_equal(self.sdp.x.value, [np.sqrt(2), 1, 1], decimal=4)
+
+        # svec semidefinite program
+        if SvecPSD is not None:
+            cost = self.svec_sdp.solve()
+            self.assertAlmostEqual(cost, 4, places=4)
+            np.testing.assert_array_almost_equal(
+                self.svec_sdp.x.value, [np.sqrt(2), 1, 1], decimal=4)
 
         # Program with no variables.
         prog = ConicProgram(0)
