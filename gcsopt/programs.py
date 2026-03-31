@@ -3,6 +3,11 @@ import cvxpy as cp
 from numbers import Number
 from gcsopt.safe_variable import safe_variable
 
+try:
+    from cvxpy.constraints.psd import SvecPSD
+except ImportError:
+    SvecPSD = None
+
 class ConicProgram:
 
     def __init__(self, size, id_to_range=None, binary_variable=None):
@@ -85,7 +90,12 @@ class ConicProgram:
             n = round(z.size ** .5)
             z_mat = cp.reshape(z, (n, n), order='F')
             return K(z_mat)
-        
+
+        # Scaled vectorized semidefinite constraint.
+        elif SvecPSD is not None and K == SvecPSD:
+            n = round((-1 + (1 + 8 * z.size) ** .5) / 2)
+            return K(z, n)
+
         # Exponential cone constraint.
         elif K == cp.ExpCone:
             z_mat = z.reshape((3, -1), order='C')
