@@ -57,7 +57,7 @@ else:
 # Print optimal solution stats.
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
-print("Solver time", graph.solver_stats.solve_time)
+print("Solver time:", graph.solver_stats.solve_time)
 
 # Plot result only if MICP is solved optimally.
 if graph.status == "optimal" and binary:
