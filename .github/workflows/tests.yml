@@ -2,9 +2,9 @@ name: Run Tests
 
 on:
   push:
-    branches: ['**']
+    branches: ["**"]
   pull_request:
-    branches: ['**']
+    branches: ["**"]
 
 jobs:
   test:
@@ -20,7 +20,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12'
+        python-version: ["3.11", "3.12", "3.13"]
 
     - name: Install dependencies
       run: |
