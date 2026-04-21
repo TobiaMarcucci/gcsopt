@@ -101,3 +101,20 @@ def graphviz_graph(graph, vertex_labels=None, edge_labels=None):
         head = vertex_labels[graph.vertices.index(edge.head)]
         dot.edge(str(tail), str(head), str(label))
     return dot
+
+def plot_bb_progress(bounds, nonnegative=True):
+    if nonnegative:
+        bounds[1] = np.where(bounds[1] >= 0, bounds[1], np.nan)
+    plt.figure(figsize=(8, 2))
+    plt.plot(bounds[0], bounds[2], lw=2, ls='-', label="best upper bound")
+    plt.plot(
+        [bounds[0, 0], bounds[0, -1]],
+        [bounds[2, -1], bounds[2, -1]],
+        lw=2, ls='--', label="optimal value")
+    plt.plot(bounds[0], bounds[1], lw=2, ls=':', label="best lower bound")
+    plt.xlim([0, bounds[0, -1]])
+    plt.xlabel("solver time (s)")
+    plt.ylabel("objective value")
+    plt.grid()
+    plt.legend()
+    plt.show()

@@ -13,6 +13,10 @@ speed = 1
 discharge_rate = 5
 charge_rate = 1
 
+# Flags.
+binary = True # True for solving MICP and False for convex relaxation.
+plot_bounds = False # Plot branch and bound progress (only if gurobipy is available and MICP is solved).
+
 # Random islands that do not intersect.
 np.random.seed(0)
 centers = np.full((num_islands, 2), np.inf) # inf ensures no intersection with sampled islands.
@@ -72,19 +76,13 @@ for i, vertex_i in enumerate(graph.vertices):
 source = graph.vertices[start]
 target = graph.vertices[goal]
 
-# Solve MICP or convex relaxation.
-binary = False
-
 # Solve problem using gurobipy if available.
 from gcsopt.gurobipy.utils import has_gurobi
 if has_gurobi():
-    save_bounds = False # Save bounds at each iteration of branch and bound.
     params = {"OutputFlag": 0, "PreMIQCPForm": 1} # See paper footnote.
     from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
     shortest_path(graph, source, target, binary=binary,
-                  gurobi_parameters=params, save_bounds=save_bounds)
-    if save_bounds:
-        np.save("flight_bounds.npy", graph.solver_stats.callback_bounds)
+                  gurobi_parameters=params, save_bounds=plot_bounds)
 
 # Solve problem using cvxpy default solver.
 else:
@@ -95,58 +93,63 @@ print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time", graph.solver_stats.solve_time)
 
-# Plot optimal flight trajectory.
-plt.figure(figsize=(10, 4))
-graph.plot_2d_solution()
+if graph.status == "optimal" and binary:
 
-# Plot ocean.
-l_plot = l - max_radius
-d_plot = (u - l) + 2 * max_radius
-u_plot = l_plot + d_plot
-ocean = plt.Rectangle(l_plot, *d_plot, fc="azure")
-plt.gca().add_patch(ocean)
+    # Plot optimal flight trajectory.
+    plt.figure(figsize=(10, 4))
+    graph.plot_2d_solution()
 
-# Plot islands.
-for i in range(num_islands):
-    island = plt.Circle(centers[i], radii[i], ec="k", fc="lightgreen")
-    plt.gca().add_patch(island)
+    # Plot ocean.
+    l_plot = l - max_radius
+    d_plot = (u - l) + 2 * max_radius
+    u_plot = l_plot + d_plot
+    ocean = plt.Rectangle(l_plot, *d_plot, fc="azure")
+    plt.gca().add_patch(ocean)
 
-# Plot settings.
-plt.gca().set_aspect("equal")
-limits = np.array([l_plot, u_plot])
-plt.xlim(limits[:, 0])
-plt.ylim(limits[:, 1])
-plt.yticks([0, 1, 2])
-plt.savefig("flight.pdf", bbox_inches="tight")
-plt.show()
+    # Plot islands.
+    for i in range(num_islands):
+        island = plt.Circle(centers[i], radii[i], ec="k", fc="lightgreen")
+        plt.gca().add_patch(island)
 
-# Reconstruct battery level as a function of time.
-battery_levels = []
-times = [0]
-vertex = source
-while vertex != target:
-    zi = vertex.variables[1].value
-    ti = (zi[1] - zi[0]) / charge_rate
-    battery_levels.extend(zi)
-    times.append(times[-1] + ti)
-    for edge in graph.outgoing_edges(vertex):
-        if np.isclose(edge.binary_variable.value, 1):
-            vertex = edge.head
-            zj = vertex.variables[1].value
-            tij = (zi[1] - zj[0]) / discharge_rate # Flight time.
-            times.append(times[-1] + tij)
-            break
-battery_levels.append(target.variables[1].value[0])
+    # Plot settings.
+    plt.gca().set_aspect("equal")
+    limits = np.array([l_plot, u_plot])
+    plt.xlim(limits[:, 0])
+    plt.ylim(limits[:, 1])
+    plt.yticks([0, 1, 2])
+    plt.show()
 
-# Plot battery level.
-plt.figure(figsize=(10, 1.5))
-end_times = (times[0], times[-1])
-plt.plot(end_times, (0, 0), "r--") # Minimum level.
-plt.plot(end_times, (1, 1), "g--") # Maximum level.
-plt.plot(times, battery_levels)
-plt.xlabel("time")
-plt.ylabel("battery level")
-plt.xlim(end_times)
-plt.grid()
-plt.savefig("battery.pdf", bbox_inches="tight")
-plt.show()
+    # Reconstruct battery level as a function of time.
+    battery_levels = []
+    times = [0]
+    vertex = source
+    while vertex != target:
+        zi = vertex.variables[1].value
+        ti = (zi[1] - zi[0]) / charge_rate
+        battery_levels.extend(zi)
+        times.append(times[-1] + ti)
+        for edge in graph.outgoing_edges(vertex):
+            if np.isclose(edge.binary_variable.value, 1):
+                vertex = edge.head
+                zj = vertex.variables[1].value
+                tij = (zi[1] - zj[0]) / discharge_rate # Flight time.
+                times.append(times[-1] + tij)
+                break
+    battery_levels.append(target.variables[1].value[0])
+
+    # Plot battery level.
+    plt.figure(figsize=(10, 1.5))
+    end_times = (times[0], times[-1])
+    plt.plot(end_times, (0, 0), "r--") # Minimum level.
+    plt.plot(end_times, (1, 1), "g--") # Maximum level.
+    plt.plot(times, battery_levels)
+    plt.xlabel("time")
+    plt.ylabel("battery level")
+    plt.xlim(end_times)
+    plt.grid()
+    plt.show()
+
+    # Plot branch and bound progress.
+    if has_gurobi() and plot_bounds:
+        from gcsopt.plot_utils import plot_bb_progress
+        plot_bb_progress(graph.solver_stats.callback_bounds)
