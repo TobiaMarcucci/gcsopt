@@ -79,10 +79,10 @@ target = graph.vertices[goal]
 # Solve problem using gurobipy if available.
 from gcsopt.gurobipy.utils import has_gurobi
 if has_gurobi():
-    params = {"OutputFlag": 0, "PreMIQCPForm": 1} # See paper footnote.
+    parameters = {"OutputFlag": 0, "PreMIQCPForm": 1} # See paper footnote for PreMIQCPForm.
     from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
     shortest_path(graph, source, target, binary=binary,
-                  gurobi_parameters=params, save_bounds=plot_bounds)
+                  gurobi_parameters=parameters, save_bounds=plot_bounds)
 
 # Solve problem using cvxpy default solver.
 else:
@@ -93,6 +93,7 @@ print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time", graph.solver_stats.solve_time)
 
+# Plot result only if MICP is solved optimally.
 if graph.status == "optimal" and binary:
 
     # Plot optimal flight trajectory.
