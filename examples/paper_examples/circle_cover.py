@@ -2,9 +2,9 @@ import cvxpy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 from gcsopt import GraphOfConvexSets
-from gcsopt.gurobipy.utils import has_gurobi
 
-# Triangular mesh for 2d robot link.
+# Problem parameters.
+num_circles = 5 # Maximum number of circles.
 mesh = np.array([
     [[1, 0], [0, 2], [0, 1]],
     [[1, 0], [0, 2], [1, 3]],
@@ -25,8 +25,9 @@ mesh = np.array([
     [[13, 6], [14, 5], [11, 6]],
 ])
 
-# Problem parameters.
-num_circles = 5 # Maximum number of circles.
+# Flags.
+binary = True # True for solving MICP and False for convex relaxation.
+plot_bounds = True # Plot branch and bound progress (only if gurobipy is available and MICP is solved).
 
 # Initialize empty graph.
 graph = GraphOfConvexSets()
@@ -71,40 +72,50 @@ for circle in circles:
         for point in points:
             edge.add_constraint(cp.norm2(point - center) <= radius)
 
-# Solve problem.
+# Solve problem using gurobipy if available.
+from gcsopt.gurobipy.utils import has_gurobi
 if has_gurobi():
+    parameters = {"OutputFlag": 0}
     from gcsopt.gurobipy.graph_problems.facility_location import facility_location
-    params = {"OutputFlag": 0}
-    save_bounds = False
-    facility_location(graph, gurobi_parameters=params, save_bounds=save_bounds)
-    if save_bounds:
-        np.save("cover_bounds.npy", graph.solver_stats.callback_bounds)
+    facility_location(graph, binary=binary, gurobi_parameters=parameters,
+                      save_bounds=plot_bounds)
+    
+# Solve problem using cvxpy default solver.
 else:
-    graph.solve_facility_location()
+    graph.solve_facility_location(binary=binary)
+
+# Print optimal solution stats.
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time:", graph.solver_stats.solve_time)
 
-# Plot solution.
-plt.figure()
-plt.grid()
-plt.gca().set_axisbelow(True)
-plt.axis("square")
-plt.xlim([l[0] - 1, u[0] + 1])
-plt.ylim([l[1] - 1, u[1] + 1])
-plt.xticks(range(l[0] - 1, u[0] + 2))
-plt.yticks(range(l[1] - 1, u[1] + 2))
+# Plot result only if MICP is solved optimally.
+if graph.status == "optimal" and binary:
 
-# Plot mesh.
-for triangle in mesh:
-    patch = plt.Polygon(triangle[:3], fc="mintcream", ec="k")
-    plt.gca().add_patch(patch)
+    # Plot solution.
+    plt.figure()
+    plt.grid()
+    plt.gca().set_axisbelow(True)
+    plt.axis("square")
+    plt.xlim([l[0] - 1, u[0] + 1])
+    plt.ylim([l[1] - 1, u[1] + 1])
+    plt.xticks(range(l[0] - 1, u[0] + 2))
+    plt.yticks(range(l[1] - 1, u[1] + 2))
 
-# Plot circle cover.
-for circle in circles:
-    if np.isclose(circle.binary_variable.value, 1):
-        center, radius = circle.variables
-        patch = plt.Circle(center.value, radius.value, fc="None", ec="b")
+    # Plot mesh.
+    for triangle in mesh:
+        patch = plt.Polygon(triangle[:3], fc="mintcream", ec="k")
         plt.gca().add_patch(patch)
-plt.savefig("cover.pdf", bbox_inches="tight")
-plt.show()
+
+    # Plot circle cover.
+    for circle in circles:
+        if np.isclose(circle.binary_variable.value, 1):
+            center, radius = circle.variables
+            patch = plt.Circle(center.value, radius.value, fc="None", ec="b")
+            plt.gca().add_patch(patch)
+    plt.show()
+
+    # Plot branch and bound progress.
+    if has_gurobi() and plot_bounds:
+        from gcsopt.plot_utils import plot_bb_progress
+        plot_bb_progress(graph.solver_stats.callback_bounds)

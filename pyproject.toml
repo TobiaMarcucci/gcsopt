@@ -8,7 +8,7 @@ version = "0.1.4"
 description = "Library for solving optimization problems over Graphs of Convex Sets (GCS)."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 authors = [
     { name = "Tobia Marcucci", email = "marcucci@ucsb.edu" },
 ]
