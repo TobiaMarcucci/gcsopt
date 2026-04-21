@@ -12,6 +12,12 @@ from gcsopt.gurobipy.graph_problems.traveling_salesman import traveling_salesman
 from traveling_salesman_spatial_bb import traveling_salesman_spatial_bb
 from traveling_salesman_mccormick import traveling_salesman_mccormick
 
+# Comparison parameters.
+time_limit = 1000
+min_kids = 2
+max_kids = 18
+assert max_kids % min_kids == 0
+
 # Problem data.
 max_walk = 3
 school_position = np.array([45, 7])
@@ -59,12 +65,10 @@ def create_graph(n_kids):
     return graph, L, U
 
 # Generate and solve random instances.
-n_min = 2
-n_max = 18
-n_kids = np.arange(n_min, n_max + 1, 2)
+n_kids = np.arange(min_kids, max_kids + 1, min_kids)
 times = np.zeros((3, len(n_kids)))
 values = np.zeros((3, len(n_kids)))
-parameters = {"OutputFlag": 0, "TimeLimit": 1000}
+parameters = {"OutputFlag": 0, "TimeLimit": time_limit}
 
 # Iterate over problem size.
 for i, n in enumerate(n_kids):

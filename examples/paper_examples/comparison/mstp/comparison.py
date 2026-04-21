@@ -12,6 +12,12 @@ from gcsopt.gurobipy.graph_problems.minimum_spanning_tree import minimum_spannin
 from minimum_spanning_tree_spatial_bb import minimum_spanning_tree_spatial_bb
 from minimum_spanning_tree_mccormick import minimum_spanning_tree_mccormick
 
+# Comparison parameters.
+time_limit = 1000
+min_width = 5
+max_width = 60
+assert max_width % min_width == 0
+
 # Problem data.
 grid_height = 15
 min_room_side = 2 / 3
@@ -61,12 +67,10 @@ def create_graph(grid_width):
     return graph, L, U
 
 # Generate and solve random instances.
-width_min = 5
-width_max = 60
-widths = np.arange(width_min, width_max + 1, 5)
+widths = np.arange(min_width, max_width + 1, min_width)
 times = np.zeros((3, len(widths)))
 values = np.zeros((3, len(widths)))
-parameters = {"OutputFlag": 0, "TimeLimit": 1000}
+parameters = {"OutputFlag": 0, "TimeLimit": time_limit}
 
 # Iterate over problem size.
 for i, width in enumerate(widths):

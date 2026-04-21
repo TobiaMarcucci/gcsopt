@@ -12,6 +12,12 @@ from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
 from shortest_path_spatial_bb import shortest_path_spatial_bb
 from shortest_path_mccormick import shortest_path_mccormick
 
+# Comparison parameters.
+time_limit = 1000
+min_islands = 30
+max_islands = 300
+assert max_islands % min_islands == 0
+
 # Problem data.
 min_radius = .02
 max_radius = .1
@@ -90,30 +96,28 @@ def create_graph(num_islands, u):
     return graph, source, target, L, U
 
 # Generate and solve random instances.
-n_min = 30
-n_max = n_min * 10
-n_islands = np.arange(n_min, n_max + 1, n_min)
+n_islands = np.arange(min_islands, max_islands + 1, min_islands)
 u_max = [5, 2]
 times = np.full((3, len(n_islands)), np.nan)
 values = np.full((3, len(n_islands)), np.nan)
+parameters = {"OutputFlag": 0, "TimeLimit": time_limit}
+micp_parameters = parameters | {"PreMIQCPForm": 1}
 
 # Iterate over problem size.
 for i, n in enumerate(n_islands):
     print("Num. islands:", n)
 
     # Generate graph.
-    u = [u_max[0] * n / n_max, u_max[1]]
+    u = [u_max[0] * n / max_islands, u_max[1]]
     graph, source, target, L, U = create_graph(n, u)
 
     # MICP.
-    parameters = {"OutputFlag": 0, "TimeLimit": 1000, "PreMIQCPForm": 1}
-    shortest_path(graph, source, target, gurobi_parameters=parameters)
+    shortest_path(graph, source, target, gurobi_parameters=micp_parameters)
     times[0, i] = graph.solver_stats.solve_time
     values[0, i] = graph.value
     print("MICP:", times[0, i], values[0, i])
 
     # MINCP.
-    parameters = {"OutputFlag": 0, "TimeLimit": 1000}
     shortest_path_spatial_bb(graph, source, target, gurobi_parameters=parameters)
     times[1, i] = graph.solver_stats.solve_time
     values[1, i] = graph.value
