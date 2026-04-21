@@ -2,7 +2,8 @@
 This script runs the comparison between the proposed MICP, the MINCP, and the
 McCormick formulation for the camera-positioning problem. It saves the results
 in .npy files that can then be used to reproduce the plot in the paper.
-WARNING: running this file takes a few hours.
+WARNING: Running this file takes a few hours. To reproduce a subset of the
+results more quickly, consider reducing the problem time_limit.
 """
 
 import cvxpy as cp

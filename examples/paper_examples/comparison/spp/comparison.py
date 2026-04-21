@@ -2,7 +2,8 @@
 This script runs the comparison between the proposed MICP, the MINCP, and the
 McCormick formulation for the helicopter-flight problem. It saves the results in
 .npy files that can then be used to reproduce the plot in the paper.
-WARNING: running this file takes a few hours.
+WARNING: Running this file takes a few hours. To reproduce a subset of the
+results more quickly, consider reducing the problem time_limit.
 """
 
 import cvxpy as cp
@@ -97,7 +98,7 @@ def create_graph(num_islands, u):
 
 # Generate and solve random instances.
 n_islands = np.arange(min_islands, max_islands + 1, min_islands)
-u_max = [5, 2]
+u_max = [1/60, 2]
 times = np.full((3, len(n_islands)), np.nan)
 values = np.full((3, len(n_islands)), np.nan)
 parameters = {"OutputFlag": 0, "TimeLimit": time_limit}
@@ -108,7 +109,7 @@ for i, n in enumerate(n_islands):
     print("Num. islands:", n)
 
     # Generate graph.
-    u = [u_max[0] * n / max_islands, u_max[1]]
+    u = [u_max[0] * n, u_max[1]]
     graph, source, target, L, U = create_graph(n, u)
 
     # MICP.

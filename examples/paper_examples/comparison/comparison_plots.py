@@ -8,6 +8,9 @@ available, run the comparison.py script in each subdirectory to generate them.
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Time limit used in the tests.
+time_limit = 1000
+
 # Initialize SPP plot.
 figsize = (8, 2)
 plt.figure(figsize=figsize)
@@ -15,7 +18,7 @@ plt.figure(figsize=figsize)
 # Load SPP files.
 islands_spp = np.load("spp/islands.npy")
 times_spp = np.load("spp/times.npy")
-times_spp[times_spp >= 1000] = np.nan
+times_spp[times_spp >= time_limit] = np.nan
 
 # Plot SPP runtimes.
 plt.plot(islands_spp, times_spp[0], label="MICP", marker="o")
@@ -40,7 +43,7 @@ plt.figure(figsize=figsize)
 # Load TSP files.
 kids_tsp = np.load("tsp/kids.npy")
 times_tsp = np.load("tsp/times.npy")
-times_tsp[times_tsp >= 1000] = np.nan
+times_tsp[times_tsp >= time_limit] = np.nan
 
 # Plot TSP runtimes.
 plt.plot(kids_tsp, times_tsp[0], marker="o")
@@ -63,7 +66,7 @@ plt.figure(figsize=figsize)
 # Load MSTP files.
 rooms_mstp = np.load("mstp/rooms.npy")
 times_mstp = np.load("mstp/times.npy")
-times_mstp[times_mstp >= 1000] = np.nan
+times_mstp[times_mstp >= time_limit] = np.nan
 
 # Plot MSTP runtimes.
 plt.plot(rooms_mstp, times_mstp[0], marker="o")
