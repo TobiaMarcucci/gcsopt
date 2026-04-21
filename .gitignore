@@ -134,9 +134,6 @@ dmypy.json
 # Plots
 *.pdf
 
-# Data
-*.npy
-
 # graphviz
 Digraph.gv
 Digraph.gv.pdf
