@@ -2,7 +2,6 @@ import numpy as np
 import cvxpy as cp
 import matplotlib.pyplot as plt
 from gcsopt import GraphOfConvexSets
-from gcsopt.gurobipy.utils import has_gurobi
 
 # Problem data.
 num_islands = 300
@@ -14,7 +13,7 @@ speed = 1
 discharge_rate = 5
 charge_rate = 1
 
-# Generate random islands that do not intersect.
+# Random islands that do not intersect.
 np.random.seed(0)
 centers = np.full((num_islands, 2), np.inf) # inf ensures no intersection with sampled islands.
 radii = np.zeros(num_islands)
@@ -29,7 +28,7 @@ while i < num_islands:
         radii[i] = radius
         i += 1
 
-# Select start and goal islands.
+# Start and goal islands.
 start = np.argmin(np.linalg.norm(centers - l, axis=1))
 goal = np.argmin(np.linalg.norm(centers - u, axis=1))
 
@@ -51,7 +50,7 @@ for i, (center, radius) in enumerate(zip(centers, radii)):
     if i == start:
         vertex.add_constraint(z[0] == 1)
 
-# Helper function that check if two islands should be connected.
+# Function that checks if two islands should be connected by an edge.
 max_range = speed / discharge_rate
 def connect(i, j):
     center_dist = np.linalg.norm(centers[i] - centers[j])
@@ -72,15 +71,26 @@ for i, vertex_i in enumerate(graph.vertices):
 # Solve shortest path problem from start to goal points.
 source = graph.vertices[start]
 target = graph.vertices[goal]
+
+# Solve MICP or convex relaxation.
+binary = False
+
+# Solve problem using gurobipy if available.
+from gcsopt.gurobipy.utils import has_gurobi
 if has_gurobi():
+    save_bounds = False # Save bounds at each iteration of branch and bound.
+    params = {"OutputFlag": 0, "PreMIQCPForm": 1} # See paper footnote.
     from gcsopt.gurobipy.graph_problems.shortest_path import shortest_path
-    params = {"OutputFlag": 0, "PreMIQCPForm": 1}
-    save_bounds = False
-    shortest_path(graph, source, target, gurobi_parameters=params, save_bounds=save_bounds)
+    shortest_path(graph, source, target, binary=binary,
+                  gurobi_parameters=params, save_bounds=save_bounds)
     if save_bounds:
         np.save("flight_bounds.npy", graph.solver_stats.callback_bounds)
+
+# Solve problem using cvxpy default solver.
 else:
-    graph.solve_shortest_path(source, target)
+    graph.solve_shortest_path(source, target, binary=binary)
+
+# Print optimal solution stats.
 print("Problem status:", graph.status)
 print("Optimal value:", graph.value)
 print("Solver time", graph.solver_stats.solve_time)
