@@ -6,6 +6,10 @@ WARNING: Running this file takes a few hours. To reproduce a subset of the
 results more quickly, consider reducing the problem time_limit.
 """
 
+# This comparison runs only if gurobipy installed.
+from gcsopt.gurobipy.utils import has_gurobi
+assert has_gurobi()
+
 import cvxpy as cp
 import numpy as np
 from gcsopt import GraphOfConvexSets
