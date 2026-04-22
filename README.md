@@ -13,7 +13,7 @@ For a detailed description of the algorithms implemented in this library see the
 
 ## Installation
 
-You can install the latest release from [PyPI](https://pypi.org/project/gcsopt/):
+You can install the [latest release from PyPI](https://pypi.org/project/gcsopt/):
 ```bash
 pip install gcsopt
 ```
@@ -34,7 +34,7 @@ For other classes of mixed-integer programs, or for better performance, you can 
 
 ### Installation of Gurobi
 
-- Get a `Gurobi` license [here](https://www.gurobi.com/lp/all/licensing/) or [here for academic use](https://www.gurobi.com/academia/academic-program-and-licenses).
+- Get a `Gurobi` license [here](https://www.gurobi.com/product/licensing) or [here for academic use](https://www.gurobi.com/academics).
 - Install the Python package `gurobipy` using your favorite installation method as described [here](https://support.gurobi.com/hc/en-us/articles/360044290292-How-do-I-install-Gurobi-for-Python).
 - Verify that `CVXPY` detects `Gurobi` by running:
 ```python
@@ -136,7 +136,7 @@ If such a solver is not available, replace any appearance of `cp.norm2` with `cp
 ## Contributing
 
 Contributions, bug reports, and feature requests are very welcome.
-To contribute, please open an issue or submit a pull request on [GitHub](https://github.com/TobiaMarcucci/gcsopt).
+To contribute, please open an issue or submit a [pull request on GitHub](https://github.com/TobiaMarcucci/gcsopt/pulls).
 
 ## Citation
 
