@@ -7,10 +7,9 @@ For a detailed description of the algorithms implemented in this library see the
 
 ## Main features
 
-`GCSOPT`:
-- uses the syntax of [`CVXPY`](https://www.cvxpy.org) for describing convex sets and convex functions.
-- provides a simple interface for assembling your graphs.
-- is interfaced to state-of-the-art solvers via [`CVXPY`](https://www.cvxpy.org/).
+- Uses the intuitive syntax of [`CVXPY`](https://www.cvxpy.org) to describe convex sets and functions.
+- Simple interface for constructing graphs of convex sets.
+- Seamless integration with state-of-the-art solvers via [`CVXPY`](https://www.cvxpy.org/).
 
 ## Installation
 
@@ -50,10 +49,11 @@ assert "GUROBI" in cvxpy.installed_solvers()
 - Verify that `CVXPY` detects `MOSEK` by running:
 ```python
 import cvxpy
-assert "GUROBI" in cvxpy.installed_solvers()
+assert "MOSEK" in cvxpy.installed_solvers()
 ```
 
 ## Example
+
 Below is a minimal example of how to use `GCSOPT` for solving a shortest-path problem in GCS.
 
 ```python
@@ -101,16 +101,9 @@ print("Problem optimal value:", G.value)
 for v in G.vertices:
     x = v.variables[0]
     print(f"Variable {v.name} optimal value:", x.value)
-
-# Plot optimal solution.
-import matplotlib.pyplot as plt
-plt.figure() # Initialize empty figure.
-G.plot_2d() # Plot graph of convex sets.
-G.plot_2d_solution() # Plot optimal subgraph.
-plt.show() # Show figure.
 ```
 
-The output of this script is:
+The output of this script is the following.
 ```bash
 Problem status: optimal
 Optimal value: 2.4561622509772887
@@ -125,7 +118,19 @@ Variable (2, 1) optimal value: [1.75586443 1.17434971]
 Variable (2, 2) optimal value: [1.91493467 1.71231286]
 ```
 
-**Note:** This example results in a mixed-integer second-order cone program, which requires a suitable solver (e.g., `Gurobi` or `MOSEK`).
+The next script plots the problem optimal solution.
+
+```python
+import matplotlib.pyplot as plt
+plt.figure() # Initialize empty figure.
+G.plot_2d() # Plot graph of convex sets.
+G.plot_2d_solution() # Plot optimal subgraph.
+plt.show() # Show figure.
+```
+
+### Note
+
+This example results in a mixed-integer second-order cone program, which requires a suitable solver (e.g., `Gurobi` or `MOSEK`).
 If such a solver is not available, replace any appearance of `cp.norm2` with `cp.norm1` or `cp.norm_inf` to obtain a mixed-integer linear program compatible with the open-source solvers that come with `CVXPY`.
 
 ## Contributing
@@ -135,7 +140,7 @@ To contribute, please open an issue or submit a pull request on [GitHub](https:/
 
 ## Citation
 
-If you use `GCSOPT` in your research, please consider citing the following reference:  
+If you use `GCSOPT` in your research, please consider citing the following paper.
 ```bibtex
 @article{marcucci2025unified,
   title={A Unified and Scalable Method for Optimization over Graphs of Convex Sets},
