@@ -1,4 +1,4 @@
-This folder collects the scripts necessary to reproduce the results presented in the paper *A Unified and Scalable Method for Optimization over Graphs of Convex Sets* by Tobia Marcucci.
+This folder collects the scripts necessary to reproduce the results presented in the paper *[A Unified and Scalable Method for Optimization over Graphs of Convex Sets](https://arxiv.org/abs/2510.20184).
 
 The results in the paper are obtained using `gurobi 12.0.3` and `cvxpy 1.7.4`.
 
