@@ -1,8 +1,9 @@
 """
 This script generates the plot used in the paper to compare the proposed MICP,
 the MINCP, and the McCormick formulation. It loads data from the .npy files
-stored in the spp, tsp, and mstp subdirectories. If these files are not
-available, run the comparison.py script in each subdirectory to generate them.
+stored in the helicopter_flight, school_bus, and camera_positioning
+subdirectories. If these files are not available, run the comparison.py script
+in each subdirectory to generate them.
 """
 
 import numpy as np
@@ -11,74 +12,74 @@ import matplotlib.pyplot as plt
 # Time limit used in the tests.
 time_limit = 1000
 
-# Initialize SPP plot.
+# Initialize helicopter_flight plot.
 figsize = (8, 2)
 plt.figure(figsize=figsize)
 
-# Load SPP files.
-islands_spp = np.load("spp/islands.npy")
-times_spp = np.load("spp/times.npy")
-times_spp[times_spp >= time_limit] = np.nan
+# Load helicopter flight files.
+islands = np.load("helicopter_flight/islands.npy")
+times = np.load("helicopter_flight/times.npy")
+times[times >= time_limit] = np.nan
 
-# Plot SPP runtimes.
-plt.plot(islands_spp, times_spp[0], label="MICP", marker="o")
-plt.plot(islands_spp, times_spp[1], label="MINCP", marker="^")
-plt.plot(islands_spp, times_spp[2], label="McCormick", marker="s")
+# Plot helicopter flight runtimes.
+plt.plot(islands, times[0], label="MICP", marker="o")
+plt.plot(islands, times[1], label="MINCP", marker="^")
+plt.plot(islands, times[2], label="McCormick", marker="s")
 
-# Polish SPP plot.
+# Polish helicopter flight plot.
 plt.xlabel(r"number of islands")
 plt.ylabel("solver time (s)")
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc="lower left",
            ncols=3, mode="expand", borderaxespad=0.)
 plt.yscale("log")
-plt.xlim(islands_spp[0], islands_spp[-1])
+plt.xlim(islands[0], islands[-1])
 plt.ylim(1e-1, 1e3)
-plt.xticks(islands_spp)
+plt.xticks(islands)
 plt.grid()
 plt.show()
 
-# Initialize TSP plot.
+# Initialize school bus plot.
 plt.figure(figsize=figsize)
 
-# Load TSP files.
-kids_tsp = np.load("tsp/kids.npy")
-times_tsp = np.load("tsp/times.npy")
-times_tsp[times_tsp >= time_limit] = np.nan
+# Load school_bus files.
+kids = np.load("school_bus/kids.npy")
+times = np.load("school_bus/times.npy")
+times[times >= time_limit] = np.nan
 
-# Plot TSP runtimes.
-plt.plot(kids_tsp, times_tsp[0], marker="o")
-plt.plot(kids_tsp, times_tsp[1], marker="^")
-plt.plot(kids_tsp, times_tsp[2], marker="s")
+# Plot school bus runtimes.
+plt.plot(kids, times[0], marker="o")
+plt.plot(kids, times[1], marker="^")
+plt.plot(kids, times[2], marker="s")
 
-# Polish TSP plot.
+# Polish school bus plot.
 plt.xlabel(r"number of kids")
 plt.ylabel("solver time (s)")
 plt.yscale("log")
-plt.xlim(kids_tsp[0], kids_tsp[-1])
+plt.xlim(kids[0], kids[-1])
 plt.ylim(1e-3, 1e3)
-plt.xticks(kids_tsp)
+plt.xticks(kids)
 plt.grid()
 plt.show()
 
-# Initialize MSTP plot.
+# Initialize camera positioning plot.
 plt.figure(figsize=figsize)
 
-# Load MSTP files.
-rooms_mstp = np.load("mstp/rooms.npy")
-times_mstp = np.load("mstp/times.npy")
-times_mstp[times_mstp >= time_limit] = np.nan
+# Load camera positioning files.
+rooms = np.load("camera_positioning/rooms.npy")
+times = np.load("camera_positioning/times.npy")
+times[times >= time_limit] = np.nan
 
-# Plot MSTP runtimes.
-plt.plot(rooms_mstp, times_mstp[0], marker="o")
-plt.plot(rooms_mstp, times_mstp[1], marker="^")
-plt.plot(rooms_mstp, times_mstp[2], marker="s")
+# Plot camera positioning runtimes.
+plt.plot(rooms, times[0], marker="o")
+plt.plot(rooms, times[1], marker="^")
+plt.plot(rooms, times[2], marker="s")
 
-# Polish MSTP plot.
+# Polish camera positioning plot.
 plt.xlabel(r"number of rooms")
 plt.ylabel("solver time (s)")
 plt.yscale("log")
-plt.xlim(rooms_mstp[0], rooms_mstp[-1])
+plt.xlim(rooms[0], rooms[-1])
 plt.ylim(1e-1, 1e3)
-plt.xticks(rooms_mstp)
+plt.xticks(rooms)
 plt.grid()
 plt.show()
