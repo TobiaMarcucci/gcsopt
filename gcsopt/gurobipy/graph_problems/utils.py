@@ -116,8 +116,12 @@ def set_solution(model, conic_graph, yv, zv, ye, ze, tol, callback=None):
     # Set bounds from callback.
     if callback is not None and callback.save_bounds:
         callback.callback_times.append(model.Runtime)
-        callback.lower_bounds.append(model.ObjVal)
-        callback.upper_bounds.append(model.ObjVal)
+        if model.status == 2:
+            callback.lower_bounds.append(model.ObjVal)
+            callback.upper_bounds.append(model.ObjVal)
+        else:
+            callback.lower_bounds.append(np.nan)
+            callback.upper_bounds.append(np.nan)
         callback.upper_bounds = [v if v != 1e100 else np.nan for v in callback.upper_bounds]
         conic_graph.solver_stats.callback_bounds = np.vstack([
             callback.callback_times,

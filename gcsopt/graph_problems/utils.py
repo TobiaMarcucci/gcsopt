@@ -67,3 +67,5 @@ def set_solution(conic_graph, prob, ye, ze, yv, zv, tol):
                 edge.tail.x.value,
                 edge.head.x.value,
                 z_value / y.value))
+        else:
+            edge.x.value = None
