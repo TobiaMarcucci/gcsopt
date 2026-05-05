@@ -197,6 +197,15 @@ class TestConicProgram(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 self.svec_sdp.x.value, [np.sqrt(2), 1, 1], decimal=4)
 
+            prog = ConicProgram(6)
+            prog.add_cost(np.array([1, 0, 0, 1, 0, 1]), 0)
+            A = np.vstack((np.eye(6), np.array([[1, 0, 0, 0, 0, 0]])))
+            b = np.array([0] * 6 + [-1])
+            K = [(SvecPSD, 6), (cp.constraints.NonNeg, 1)]
+            prog.add_constraints(A, b, K)
+            cost = prog.solve()
+            self.assertAlmostEqual(cost, 1, places=4)
+
         # Program with no variables.
         prog = ConicProgram(0)
         prog.add_cost(np.zeros(0), 1.33)

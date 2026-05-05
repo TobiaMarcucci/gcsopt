@@ -94,7 +94,15 @@ class ConicProgram:
         # Scaled vectorized semidefinite constraint.
         elif SvecPSD is not None and K == SvecPSD:
             n = round((-1 + (1 + 8 * z.size) ** .5) / 2)
-            return K(z, n)
+            z_mat = [[None for _ in range(n)] for _ in range(n)]
+            idx = 0
+            for i in range(n):
+                for j in range(i, n):
+                    value = z[idx] if i == j else z[idx] / np.sqrt(2)
+                    z_mat[i][j] = value
+                    z_mat[j][i] = value
+                    idx += 1
+            return cp.PSD(cp.bmat(z_mat))
 
         # Exponential cone constraint.
         elif K == cp.ExpCone:
