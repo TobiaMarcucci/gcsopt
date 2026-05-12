@@ -14,7 +14,7 @@ authors = [
 ]
 dependencies = [
     "numpy",
-    "cvxpy>=1.7.4",
+    "cvxpy>=1.7.4,<=1.8.2",
 ]
 
 [project.optional-dependencies]
