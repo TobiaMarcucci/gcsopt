@@ -47,6 +47,7 @@ from gcsopt.gurobipy.utils import has_gurobi
 if has_gurobi():
     parameters = {"OutputFlag": 0}
     from gcsopt.gurobipy.graph_problems.traveling_salesman import traveling_salesman
+    # Note: the following method uses networkx within the subtour elimination.
     traveling_salesman(graph, binary=binary, gurobi_parameters=parameters,
                        save_bounds=plot_bounds)
     

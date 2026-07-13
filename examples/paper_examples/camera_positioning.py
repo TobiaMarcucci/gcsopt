@@ -61,6 +61,7 @@ for i, tail in enumerate(graph.vertices):
 # Solve problem with gurobipy.
 root = graph.vertices[main_room]
 parameters = {"OutputFlag": 0}
+# Note: the following method uses networkx within the subtour elimination.
 minimum_spanning_tree(graph, root, binary=binary, gurobi_parameters=parameters,
                       save_bounds=plot_bounds)
 

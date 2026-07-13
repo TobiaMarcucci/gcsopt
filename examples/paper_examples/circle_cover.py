@@ -27,7 +27,7 @@ mesh = np.array([
 
 # Flags.
 binary = True # True for solving MICP and False for convex relaxation.
-plot_bounds = True # Plot branch and bound progress (only if gurobipy is available and MICP is solved).
+plot_bounds = False # Plot branch and bound progress (only if gurobipy is available and MICP is solved).
 
 # Initialize empty graph.
 graph = GraphOfConvexSets()
@@ -111,7 +111,7 @@ if graph.status == "optimal" and binary:
     for circle in circles:
         if np.isclose(circle.binary_variable.value, 1):
             center, radius = circle.variables
-            patch = plt.Circle(center.value, radius.value, fc="None", ec="b")
+            patch = plt.Circle(center.value, radius.value[0], fc="None", ec="b")
             plt.gca().add_patch(patch)
     plt.show()
 
