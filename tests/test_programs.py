@@ -365,6 +365,17 @@ class TestConvexProgram(unittest.TestCase):
         prog.add_constraints([x >= -3, y <= 3, X[0, 1] == 1, Y == np.ones(Y.shape)])
         programs.append(prog)
 
+        # Program that detects the convention (entry ordering and scaling) used
+        # by cvxpy to describe a semidefinite cone in vectorized form, which
+        # differs from solver to solver. The optimal value is -1, since the
+        # matrix [[1, 0, x], [0, 4, 0], [x, 0, 1]] is psd iff |x| <= 1.
+        prog = ConvexProgram()
+        X = prog.add_variable((3, 3), PSD=True)
+        prog.add_cost(- X[0, 2])
+        prog.add_constraints([X[0, 0] == 1, X[1, 1] == 4, X[2, 2] == 1,
+                              X[0, 1] == 0, X[1, 2] == 0])
+        programs.append(prog)
+
         # Programs where one cvxpy constraint holds multiple second order cones.
         # A norm along an axis yields one cone per column (row) of the matrix.
         for axis in range(2):
@@ -423,7 +434,7 @@ class TestConvexProgram(unittest.TestCase):
         prog.add_constraint(X[0, 0] == 1)
         programs.append(prog)
 
-        # Sdp for inimum volume ellipsoid.
+        # Sdp for minimum-volume ellipsoid.
         for d in range(2, 6):
             points = np.vstack((np.zeros((1, d)), np.eye(d)))
             prog = ConvexProgram()
@@ -434,7 +445,8 @@ class TestConvexProgram(unittest.TestCase):
                 prog.add_constraint(cp.norm2(A @ point + b) <= 1)
             programs.append(prog)
 
-        # Check that solving convex program is equal to solve conic program.
+        # Check that solving convex program is equal to solving the corresponding conic
+        # program.
         for convex_prog in programs:
             conic_prog = convex_prog.to_conic()
 

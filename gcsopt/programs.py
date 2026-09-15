@@ -198,6 +198,21 @@ class ConvexProgram:
             if not v.id in used_ids:
                 self.add_cost(0 * v.flatten(order="F")[0])
 
+    def _ensure_constraint_usage(self):
+        """
+        Ensure that the program has at least one constraint. If it has none, add
+        a dummy constraint of zero times a variable equal to zero. This is needed
+        since scs, which is the solver targeted by the reduction chain in
+        to_conic, does not accept programs without constraints.
+        """
+        if len(self.constraints) == 0:
+            # The variables of an edge are stored in its tail and head, hence the
+            # variables in the cost are considered too.
+            variables = self.variables + self.cost.variables()
+            if len(variables) > 0:
+                v = variables[0]
+                self.add_constraint(0 * v.flatten(order="F")[0] == 0)
+
     def to_conic(self):
         """
         Converts this ConvexProgram into an equivalent ConicProgram, using the
@@ -213,12 +228,22 @@ class ConvexProgram:
             conic_program.add_cost([], self.cost)
             return conic_program
 
+        # Ensure that the program has at least one constraint.
+        self._ensure_constraint_usage()
+
         # Apply cvxpy reductions to get conic program.
         cp_convex = cp.Problem(cp.Minimize(self.cost), self.constraints)
         if not cp_convex.is_dcp():
             raise ValueError(f"Convex program is not DCP.")
+        # The solver is pinned since the cvxpy reductions tailor the description
+        # of the cones to the solver that comes last in the chain. For example,
+        # the entries of a scaled vectorized semidefinite cone are scaled by
+        # sqrt(2) for scs, but not for mosek. Without pinning the solver, the
+        # conic program (and hence the cones decoded in _constrain_in_cone) would
+        # depend on which solvers are installed. Scs is used since it is a
+        # dependency of cvxpy, and hence always available.
         solver_opts = {"use_quad_obj": False}
-        chain = cp_convex._construct_chain(solver_opts=solver_opts)
+        chain = cp_convex._construct_chain(solver=cp.SCS, solver_opts=solver_opts)
         chain.reductions = chain.reductions[:-1]
         cp_conic = chain.apply(cp_convex)[0]
 
