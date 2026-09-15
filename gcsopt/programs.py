@@ -198,6 +198,21 @@ class ConvexProgram:
             if not v.id in used_ids:
                 self.add_cost(0 * v.flatten(order="F")[0])
 
+    def _ensure_constraint_usage(self):
+        """
+        Ensure that the program has at least one constraint. If it has none, add
+        a dummy constraint of zero times a variable equal to zero. This is needed
+        since scs, which is the solver targeted by the reduction chain in
+        to_conic, does not accept programs without constraints.
+        """
+        if len(self.constraints) == 0:
+            # The variables of an edge are stored in its tail and head, hence the
+            # variables in the cost are considered too.
+            variables = self.variables + self.cost.variables()
+            if len(variables) > 0:
+                v = variables[0]
+                self.add_constraint(0 * v.flatten(order="F")[0] == 0)
+
     def to_conic(self):
         """
         Converts this ConvexProgram into an equivalent ConicProgram, using the
@@ -213,12 +228,22 @@ class ConvexProgram:
             conic_program.add_cost([], self.cost)
             return conic_program
 
+        # Ensure that the program has at least one constraint.
+        self._ensure_constraint_usage()
+
         # Apply cvxpy reductions to get conic program.
         cp_convex = cp.Problem(cp.Minimize(self.cost), self.constraints)
         if not cp_convex.is_dcp():
             raise ValueError(f"Convex program is not DCP.")
+        # The solver is pinned since the cvxpy reductions tailor the description
+        # of the cones to the solver that comes last in the chain. For example,
+        # the entries of a scaled vectorized semidefinite cone are scaled by
+        # sqrt(2) for scs, but not for mosek. Without pinning the solver, the
+        # conic program (and hence the cones decoded in _constrain_in_cone) would
+        # depend on which solvers are installed. Scs is used since it is a
+        # dependency of cvxpy, and hence always available.
         solver_opts = {"use_quad_obj": False}
-        chain = cp_convex._construct_chain(solver_opts=solver_opts)
+        chain = cp_convex._construct_chain(solver=cp.SCS, solver_opts=solver_opts)
         chain.reductions = chain.reductions[:-1]
         cp_conic = chain.apply(cp_convex)[0]
 
@@ -252,10 +277,45 @@ class ConvexProgram:
         # dense arrays, since keeping them sparse seems to make things slower.
         cols = cp_conic.q.shape[0]
         Ab = cp_conic.A.toarray().reshape((-1, cols), order='F')
-        K = [(type(c), c.size) for c in cp_conic.constraints]
+        Ab, K = self._list_cones(Ab, cp_conic.constraints)
         conic_program.add_constraints(Ab[:, :-1], Ab[:, -1], K)
 
         return conic_program
+
+    @staticmethod
+    def _list_cones(Ab, cp_constraints):
+        """
+        Lists the cones of the cvxpy conic program one by one, and sorts the rows
+        of the matrix [A, b] accordingly. This is necessary since a single cvxpy
+        constraint can represent multiple second order cones (e.g., the
+        constraint cp.norm(X, 2, axis=0) <= 1 yields one cone per column of X),
+        whereas here each cone must be a separate entry of K, described by a
+        contiguous block of rows.
+        """
+        K = []
+        rows = []
+        start = 0
+        for constraint in cp_constraints:
+            if isinstance(constraint, cp.SOC) and constraint.num_cones() > 1:
+
+                # Cvxpy stuffs the rows of a constraint one argument at a time,
+                # hence the rows of this constraint are [t, X], with X flattened
+                # in column-major order, and the i-th cone is (t[i], X[:, i]).
+                # Note that here all second order cones have axis=0, since cvxpy
+                # transposes X when axis=1.
+                num_cones = constraint.num_cones()
+                cone_size = constraint.cone_sizes()[0]
+                for i in range(num_cones):
+                    X_start = start + num_cones + i * (cone_size - 1)
+                    rows.append(start + i)
+                    rows.extend(range(X_start, X_start + cone_size - 1))
+                    K.append((cp.SOC, cone_size))
+
+            else:
+                rows.extend(range(start, start + constraint.size))
+                K.append((type(constraint), constraint.size))
+            start += constraint.size
+        return Ab[rows], K
 
     def solve(self, **kwargs):
         """
