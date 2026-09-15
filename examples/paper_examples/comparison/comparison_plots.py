@@ -17,8 +17,8 @@ figsize = (8, 2)
 plt.figure(figsize=figsize)
 
 # Load helicopter flight files.
-islands = np.load("helicopter_flight/islands.npy")
-times = np.load("helicopter_flight/times.npy")
+islands = np.load("examples/paper_examples/comparison/helicopter_flight/islands.npy")
+times = np.load("examples/paper_examples/comparison/helicopter_flight/times.npy")
 times[times >= time_limit] = np.nan
 
 # Plot helicopter flight runtimes.
@@ -42,8 +42,8 @@ plt.show()
 plt.figure(figsize=figsize)
 
 # Load school_bus files.
-kids = np.load("school_bus/kids.npy")
-times = np.load("school_bus/times.npy")
+kids = np.load("examples/paper_examples/comparison/school_bus/kids.npy")
+times = np.load("examples/paper_examples/comparison/school_bus/times.npy")
 times[times >= time_limit] = np.nan
 
 # Plot school bus runtimes.
@@ -65,8 +65,8 @@ plt.show()
 plt.figure(figsize=figsize)
 
 # Load camera positioning files.
-rooms = np.load("camera_positioning/rooms.npy")
-times = np.load("camera_positioning/times.npy")
+rooms = np.load("examples/paper_examples/comparison/camera_positioning/rooms.npy")
+times = np.load("examples/paper_examples/comparison/camera_positioning/times.npy")
 times[times >= time_limit] = np.nan
 
 # Plot camera positioning runtimes.

@@ -100,6 +100,6 @@ for i, n in enumerate(n_kids):
     values[2, i] = graph.value
     print("McCormick:", times[2, i], values[2, i])
 
-np.save("kids.npy", n_kids)
-np.save("times.npy", times)
-np.save("values.npy", values)
+np.save("examples/paper_examples/comparison/school_bus/kids.npy", n_kids)
+np.save("examples/paper_examples/comparison/school_bus/times.npy", times)
+np.save("examples/paper_examples/comparison/school_bus/values.npy", values)
