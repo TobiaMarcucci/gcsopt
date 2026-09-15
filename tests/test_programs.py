@@ -365,6 +365,35 @@ class TestConvexProgram(unittest.TestCase):
         prog.add_constraints([x >= -3, y <= 3, X[0, 1] == 1, Y == np.ones(Y.shape)])
         programs.append(prog)
 
+        # Programs where one cvxpy constraint holds multiple second order cones.
+        # A norm along an axis yields one cone per column (row) of the matrix.
+        for axis in range(2):
+            shape = (3, 2) if axis == 0 else (2, 3)
+
+            # Multiple cones in a constraint.
+            prog = ConvexProgram()
+            X = prog.add_variable(shape)
+            prog.add_cost(- cp.sum(X))
+            prog.add_constraint(cp.norm(X, 2, axis=axis) <= 2)
+            programs.append(prog)
+
+            # Multiple cones in the cost.
+            prog = ConvexProgram()
+            X = prog.add_variable(shape)
+            prog.add_cost(cp.sum(cp.norm(X, 2, axis=axis)) - cp.sum(X))
+            prog.add_constraints([X >= -1, X <= 1])
+            programs.append(prog)
+
+            # Multiple cones in an explicit second order cone constraint, mixed
+            # with cones of a different size.
+            prog = ConvexProgram()
+            X = prog.add_variable(shape)
+            y = prog.add_variable(2)
+            t = prog.add_variable(shape[1 - axis])
+            prog.add_cost(cp.sum(t) - cp.sum(X) - cp.sum(y))
+            prog.add_constraints([t <= 2, cp.SOC(t, X, axis=axis), cp.SOC(1, y)])
+            programs.append(prog)
+
         # Infeasible program.
         prog = ConvexProgram()
         x = prog.add_variable(4, nonneg=True)
@@ -421,6 +450,25 @@ class TestConvexProgram(unittest.TestCase):
                 else:
                     conic_value = conic_prog.get_convex_variable_value(variable)
                     np.testing.assert_array_almost_equal(variable.value, conic_value, decimal=4)
+
+    def test_to_conic_multiple_soc(self):
+
+        # One second order cone per column of X, of size 4 = 1 + 3.
+        for axis in range(2):
+            shape = (3, 2) if axis == 0 else (2, 3)
+            convex_prog = ConvexProgram()
+            X = convex_prog.add_variable(shape)
+            convex_prog.add_cost(- cp.sum(X))
+            convex_prog.add_constraint(cp.norm(X, 2, axis=axis) <= 2)
+            conic_prog = convex_prog.to_conic()
+
+            # Each cone must be a separate entry of K.
+            soc = [Ki for Ki in conic_prog.K if Ki[0] == cp.constraints.SOC]
+            self.assertEqual(soc, [(cp.constraints.SOC, 4)] * 2)
+
+            # Each cone must bound one column of X, and not the whole matrix.
+            self.assertAlmostEqual(convex_prog.solve(), - 4 * np.sqrt(3), places=4)
+            self.assertAlmostEqual(conic_prog.solve(), - 4 * np.sqrt(3), places=4)
 
     def test_to_conic_corner_cases(self):
 

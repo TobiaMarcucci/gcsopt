@@ -252,10 +252,45 @@ class ConvexProgram:
         # dense arrays, since keeping them sparse seems to make things slower.
         cols = cp_conic.q.shape[0]
         Ab = cp_conic.A.toarray().reshape((-1, cols), order='F')
-        K = [(type(c), c.size) for c in cp_conic.constraints]
+        Ab, K = self._list_cones(Ab, cp_conic.constraints)
         conic_program.add_constraints(Ab[:, :-1], Ab[:, -1], K)
 
         return conic_program
+
+    @staticmethod
+    def _list_cones(Ab, cp_constraints):
+        """
+        Lists the cones of the cvxpy conic program one by one, and sorts the rows
+        of the matrix [A, b] accordingly. This is necessary since a single cvxpy
+        constraint can represent multiple second order cones (e.g., the
+        constraint cp.norm(X, 2, axis=0) <= 1 yields one cone per column of X),
+        whereas here each cone must be a separate entry of K, described by a
+        contiguous block of rows.
+        """
+        K = []
+        rows = []
+        start = 0
+        for constraint in cp_constraints:
+            if isinstance(constraint, cp.SOC) and constraint.num_cones() > 1:
+
+                # Cvxpy stuffs the rows of a constraint one argument at a time,
+                # hence the rows of this constraint are [t, X], with X flattened
+                # in column-major order, and the i-th cone is (t[i], X[:, i]).
+                # Note that here all second order cones have axis=0, since cvxpy
+                # transposes X when axis=1.
+                num_cones = constraint.num_cones()
+                cone_size = constraint.cone_sizes()[0]
+                for i in range(num_cones):
+                    X_start = start + num_cones + i * (cone_size - 1)
+                    rows.append(start + i)
+                    rows.extend(range(X_start, X_start + cone_size - 1))
+                    K.append((cp.SOC, cone_size))
+
+            else:
+                rows.extend(range(start, start + constraint.size))
+                K.append((type(constraint), constraint.size))
+            start += constraint.size
+        return Ab[rows], K
 
     def solve(self, **kwargs):
         """
