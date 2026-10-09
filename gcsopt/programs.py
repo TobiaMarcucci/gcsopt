@@ -8,6 +8,16 @@ try:
 except ImportError:
     SvecPSD = None
 
+from cvxpy.reductions.solvers.solver import Solver
+
+# Newer cvxpy applies the solver's cone layout as its own chain step, right
+# before the solver, instead of inside the solver interface.
+try:
+    from cvxpy.reductions.cone_format import ConeFormat
+    _SOLVER_STEPS = (Solver, ConeFormat)
+except ImportError:
+    _SOLVER_STEPS = (Solver,)
+
 class ConicProgram:
 
     def __init__(self, size, id_to_range=None, binary_variable=None):
@@ -244,7 +254,11 @@ class ConvexProgram:
         # dependency of cvxpy, and hence always available.
         solver_opts = {"use_quad_obj": False}
         chain = cp_convex._construct_chain(solver=cp.SCS, solver_opts=solver_opts)
-        chain.reductions = chain.reductions[:-1]
+        # Drop the solver-facing steps, so that the cones stay in the layout
+        # that _constrain_in_cone decodes.
+        chain.reductions = [
+            r for r in chain.reductions if not isinstance(r, _SOLVER_STEPS)
+        ]
         cp_conic = chain.apply(cp_convex)[0]
 
         # Dictionary that maps the id of a variable in the cost and constraints
